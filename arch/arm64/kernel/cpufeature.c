@@ -601,6 +601,15 @@ u64 read_system_reg(u32 id)
 	return regp->sys_val;
 }
 
+u64 read_system_reg(u32 id)
+{
+	struct arm64_ftr_reg *regp = get_arm64_ftr_reg(id);
+
+	/* We shouldn't get a request for an unsupported register */
+	BUG_ON(!regp);
+	return regp->sys_val;
+}
+
 static bool
 feature_matches(u64 reg, const struct arm64_cpu_capabilities *entry)
 {

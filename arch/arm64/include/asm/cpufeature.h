@@ -193,6 +193,8 @@ static inline bool system_uses_ttbr0_pan(void)
 		!cpus_have_cap(ARM64_HAS_PAN);
 }
 
+u64 read_system_reg(u32 id);
+
 #endif /* __ASSEMBLY__ */
 
 #endif

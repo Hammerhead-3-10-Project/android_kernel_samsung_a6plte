@@ -6289,6 +6289,10 @@ static __init int selinux_init(void)
 		selinux_enforcing = 1;
 #endif
 // ] SEC_SELINUX_PORTING_COMMON
+#ifdef SEC_FORCE_PERMISSIVE
+	/* Recovery-only kernel: always permissive (TWRP is not shipped with a full Samsung policy) */
+	selinux_enforcing = 0;
+#endif
 	if (selinux_enforcing)
 		printk(KERN_DEBUG "SELinux:  Starting in enforcing mode\n");
 	else

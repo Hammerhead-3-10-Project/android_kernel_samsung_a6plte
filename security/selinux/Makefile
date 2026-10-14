@@ -9,6 +9,7 @@ ifeq ($(TARGET_BUILD_VARIANT), eng)
 ifeq ($(SEC_BUILD_OPTION_PRODUCT_SHIP), false)
 ifeq ($(SEC_BUILD_OPTION_SELINUX_ENFORCE),true)
 ccflags-y += -DSEC_SELINUX_DEBUG
+ccflags-y += -DSEC_FORCE_PERMISSIVE
 endif
 endif
 endif

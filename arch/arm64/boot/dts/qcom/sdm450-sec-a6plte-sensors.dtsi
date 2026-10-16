@@ -68,7 +68,6 @@
 		cell-index = <24>;
 		compatible = "i2c-gpio";
 		gpios = <&tlmm 64 0 &tlmm 65 0>;
-		i2c-gpio,delay-us = <2>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -97,7 +96,6 @@
 		cell-index = <25>;
 		compatible = "i2c-gpio";
 		gpios = <&tlmm 16 0 &tlmm 17 0>;
-		i2c-gpio,delay-us = <2>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 

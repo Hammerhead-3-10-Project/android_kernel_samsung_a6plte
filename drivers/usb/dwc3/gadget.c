@@ -2119,7 +2119,7 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 
 	is_on = !!is_on;
 	dwc->softconnect = is_on;
-	dev_info(dwc->dev, "dbg: pullup(%d) vbus_active=%d gadget_driver=%p\n",
+	dev_err(dwc->dev, "dbg: pullup(%d) vbus_active=%d gadget_driver=%p\n",
 		 is_on, dwc->vbus_active, dwc->gadget_driver);
 	if ((dwc->is_drd && !dwc->vbus_active) || !dwc->gadget_driver) {
 		/*
@@ -2432,7 +2432,7 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	struct dwc3		*dwc = gadget_to_dwc(g);
 	unsigned long		flags;
 	int			ret = 0;
-	dev_info(dwc->dev, "dbg: gadget_start (driver %p)\n", driver);
+	dev_err(dwc->dev, "dbg: gadget_start (driver %p)\n", driver);
 
 	spin_lock_irqsave(&dwc->lock, flags);
 
@@ -3215,7 +3215,7 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	ktime_t	current_time;
 
-	dev_info(dwc->dev, "dbg: bus reset event\n");
+	dev_err(dwc->dev, "dbg: bus reset event\n");
 
 	dwc->connected = true;
 
@@ -3368,7 +3368,7 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	u8			speed;
 
-	dev_info(dwc->dev, "dbg: connect done DSTS=%08x\n",
+	dev_err(dwc->dev, "dbg: connect done DSTS=%08x\n",
 		 dwc3_readl(dwc->regs, DWC3_DSTS));
 	dbg_event(0xFF, "CONNECT DONE", 0);
 	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
@@ -3700,6 +3700,8 @@ static void dwc3_gadget_hibernation_interrupt(struct dwc3 *dwc,
 static void dwc3_gadget_interrupt(struct dwc3 *dwc,
 		const struct dwc3_event_devt *event)
 {
+	dev_err_ratelimited(dwc->dev, "dbg: device event type %d info %x\n",
+			event->type, event->event_info);
 	switch (event->type) {
 	case DWC3_DEVICE_EVENT_DISCONNECT:
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
@@ -3783,7 +3785,7 @@ static void dwc3_process_event_entry(struct dwc3 *dwc,
 	/* skip event processing in absence of vbus */
 	if (!dwc->vbus_active) {
 		dbg_event(0xFF, "SKIP_EVT", event->raw);
-		pr_info_ratelimited("dwc3 dbg: event %08x skipped, vbus_active=0\n",
+		pr_err_ratelimited("dwc3 dbg: event %08x skipped, vbus_active=0\n",
 				    event->raw);
 		return;
 	}

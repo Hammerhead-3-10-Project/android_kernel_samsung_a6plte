@@ -348,3 +348,11 @@
 &apps_iommu {
 	qcom,force-aarch32-format;
 };
+
+/* Same secure-app region as the stock DT (inside tzapp_region): the Samsung TZ
+ * rejects the registration of any other address (scm 0x72000105 -> -2). */
+&qcom_seecom {
+	reg = <0x83800000 0x1800000>;
+	/delete-property/ qcom,commonlib64-loaded-by-uefi;
+	qcom,appsbl-qseecom-support;
+};

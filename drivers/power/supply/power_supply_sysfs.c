@@ -53,8 +53,9 @@ static ssize_t power_supply_show_property(struct device *dev,
 		/*HS70 add for HS70-919 enable AFC function by qianyingdong at 2019/11/18 start*/
 		"TYPEC", "TYPEC_UFP", "TYPEC_DFP","OTG",
 		#if defined(CONFIG_AFC)
-		"AFC"
+		"AFC",
 		#endif
+		"POWER_SHARING", "POGO"
 		/*HS70 add for HS70-919 enable AFC function by qianyingdong at 2019/11/18 start*/
 	};
 	#else
@@ -88,7 +89,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 		"Unknown", "Good", "Overheat", "Dead", "Over voltage",
 		"Unspecified failure", "Cold", "Watchdog timer expire",
 		"Safety timer expire",
-		"Warm", "Cool", "Hot"
+		"Warm", "Cool", "Hot", "Under voltage", "Overheat limit"
 	};
 	static char *technology_text[] = {
 		"Unknown", "NiMH", "Li-ion", "Li-poly", "LiFe", "NiCd",
@@ -431,6 +432,14 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(batt_id_error),
 	/*HS60 & HS70 add for HS60-3421 by wangzikang at 2019/10/31 end*/
 	POWER_SUPPLY_ATTR(real_capacity),
+	POWER_SUPPLY_ATTR(afc_charger_mode),
+	POWER_SUPPLY_ATTR(charge_aicl_control),
+	POWER_SUPPLY_ATTR(charge_otg_control),
+	POWER_SUPPLY_ATTR(charge_powered_otg_control),
+	POWER_SUPPLY_ATTR(charge_uno_control),
+	POWER_SUPPLY_ATTR(current_full),
+	POWER_SUPPLY_ATTR(filter_cfg),
+	POWER_SUPPLY_ATTR(power_design),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */

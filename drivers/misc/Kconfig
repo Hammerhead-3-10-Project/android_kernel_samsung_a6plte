@@ -869,6 +869,11 @@ source "drivers/misc/samsung/Kconfig"
 # huaqin added by liufurong for SR-ZQL1695-01000000584 at 20190719 end
 source "drivers/misc/fpr_FingerprintCard/Kconfig"
 
+config SEC_MPP_SHARE
+	bool "Samsung MPP share"
+	help
+	  Say Y to include support for mpp share
+
 endmenu
 
 config OKL4_LINK_SHBUF

@@ -1,0 +1,570 @@
+// Battery, charger, fuel gauge and MUIC of the Samsung A6+ (SM5708 family), ported from the stock DT.
+
+&tlmm {
+			sm5708_i2c_pins {
+				qcom,num-grp-pins = <0x02>;
+				qcom,pin-func = <0x00>;
+				label = "sm5708_gpio";
+
+				p1c7: default {
+
+					mux {
+						pins = "gpio98", "gpio99";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio98", "gpio99";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1ca: active {
+
+					mux {
+						pins = "gpio98", "gpio99";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio98", "gpio99";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1cb: suspend {
+
+					mux {
+						pins = "gpio98", "gpio99";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio98", "gpio99";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+			};
+			sm5708_intr_pins {
+				qcom,pin-func = <0x00>;
+				label = "sm5708_gpio_int";
+
+				p1c8: default {
+
+					mux {
+						pins = "gpio63";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio63";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				active {
+
+					mux {
+						pins = "gpio63";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio63";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				suspend {
+
+					mux {
+						pins = "gpio63";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio63";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+			};
+			sm5708_rst_pins {
+				label = "sm5708_rst_pin";
+
+				p1c9: default {
+
+					mux {
+						pins = "gpio61";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio61";
+						drive-strength = <0x02>;
+						bias-disable;
+						input-enable;
+					};
+				};
+			};
+			charger_int_pin {
+				qcom,num-grp-pins = <0x01>;
+				qcom,pin-func = <0x00>;
+				label = "charger_int_gpio";
+
+				p1cc: charger_int_active {
+
+					mux {
+						pins = "gpio126";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio126";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+			};
+			chg_en_pin {
+				pins = "gpio34";
+				qcom,num-grp-pins = <0x01>;
+				qcom,pin-func = <0x00>;
+				label = "chg_en_gpio";
+
+				p1cd: chg_en_default {
+
+					mux {
+						pins = "gpio34";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio34";
+						drive-strength = <0x02>;
+						bias-pull-down;
+						output-high;
+					};
+				};
+			};
+			fuel_int_pin {
+				qcom,num-grp-pins = <0x01>;
+				qcom,pin-func = <0x00>;
+				label = "fuel_int_gpio";
+
+				p1c2: fuel_int_default {
+
+					mux {
+						pins = "gpio62";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio62";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1c4: fuel_int_active {
+
+					mux {
+						pins = "gpio62";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio62";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1c6: fuel_int_suspend {
+
+					mux {
+						pins = "gpio62";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio62";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+			};
+			fg_i2c {
+				qcom,num-grp-pins = <0x02>;
+				qcom,pin-func = <0x00>;
+				label = "sm5708_fg_gpio";
+
+				p1c1: fg_i2c_default {
+
+					mux {
+						pins = "gpio38", "gpio39";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio38", "gpio39";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1c3: fg_i2c_active {
+
+					mux {
+						pins = "gpio38", "gpio39";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio38", "gpio39";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+
+				p1c5: fg_i2c_suspend {
+
+					mux {
+						pins = "gpio38", "gpio39";
+						function = "gpio";
+					};
+
+					config {
+						pins = "gpio38", "gpio39";
+						drive-strength = <0x02>;
+						bias-disable;
+					};
+				};
+			};
+};
+
+/* sdm450.dtsi drops the MPP4 "case thermistor" nodes; the A6+ battery thermistor sits behind it. */
+&pm8953_mpps {
+	case_therm {
+		cas_therm_default: cas_therm_default {
+			pins = "mpp4";
+			function = "analog";
+			input-enable;
+			qcom,amux-route = <3>;
+		};
+	};
+};
+
+&pm8953_vadc {
+	pinctrl-0 = <&pa_therm1_default &cas_therm_default>;
+
+	chan@13 {
+		label = "mpp4_div1";
+		reg = <0x13>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,vadc-thermal-node;
+	};
+};
+
+&soc {
+		i2c@10 {
+			cell-index = <0x0a>;
+			compatible = "i2c-gpio";
+			gpios = <&tlmm 39 0x00 &tlmm 38 0x00>;
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			sm5708-fuelgauge@71 {
+				compatible = "sm5708-fuelgauge,i2c";
+				reg = <0x71>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&p1c1 &p1c2>;
+				pinctrl-1 = <&p1c3 &p1c4>;
+				pinctrl-2 = <&p1c5 &p1c6>;
+				fuelgauge,fuel_int = <&tlmm 62 0x00>;
+				fuelgauge,fuel_alert_soc = <0x01>;
+				fuelgauge,capacity_max = <0x3e8>;
+				fuelgauge,capacity_max_margin = <0x46>;
+				fuelgauge,capacity_min = <0x00>;
+				fuelgauge,capacity_calculation_type = <0x1f>;
+				fuelgauge,type_str = "BATTERY";
+				fuelgauge,model_type = <0x01>;
+				fuelgauge,fg_log_enable = <0x01>;
+			};
+		};
+		i2c@13 {
+			cell-index = <0x0d>;
+			compatible = "i2c-gpio";
+			gpios = <&tlmm 98 0x00 &tlmm 99 0x00>;
+			i2c-gpio,delay-us = <0x02>;
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			muic-sm5708@25 {
+				status = "okay";
+				compatible = "muic-universal";
+				reg = <0x25>;
+				interrupt-parent = <&tlmm>;
+				interrupts = <0x3f 0x00>;
+				muic-universal,irq-gpio = <&tlmm 63 0x00>;
+				sm5708,wakeup;
+				muic-universal,chip_name = "sm,sm5708";
+				pinctrl-names = "muic_i2c_pins_default", "muic_i2c_pins_active", "muic_i2c_pins_suspend";
+				pinctrl-0 = <&p1c7 &p1c8 &p1c9>;
+				pinctrl-1 = <&p1ca &p1c8 &p1c9>;
+				pinctrl-2 = <&p1cb &p1c8 &p1c9>;
+				muic,sm5705_switch_gpio = <&tlmm 45 0x00>;
+				muic,max-afc-support-volt = <0x04>;
+				muic,max-afc-support-cur = <0x08>;
+			};
+
+			sm5708@49 {
+				compatible = "sm,sm5708";
+				reg = <0x49>;
+				interrupt-parent = <&tlmm>;
+				sm5708,irq-gpio = <&tlmm 126 0x00>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&p1cc &p1cd>;
+			};
+		};
+};
+
+/ {
+	battery {
+		status = "okay";
+		compatible = "samsung,sec-battery";
+		battery,vendor = "BATTERY";
+		battery,charger_name = "sm5708-charger";
+		battery,fuelgauge_name = "sm5708-fuelgauge";
+		battery,technology = <0x02>;
+		battery,batt_data_version = <0x02>;
+		battery,chip_vendor = "QCOM";
+		battery,temp_adc_type = <0x01>;
+		battery,temp_check_type = <0x02>;
+		battery,chg_temp_check = <0x00>;
+		battery,wpc_temp_check = <0x00>;
+		battery,thermal_source = <0x02>;
+		battery,usb_thermal_source = <0x00>;
+		battery,chg_thermal_source = <0x00>;
+		battery,wpc_thermal_source = <0x00>;
+		battery,coil_thermal_source = <0x00>;
+		battery,mux_channel_temp = <0x04>;
+		battery,polling_time = <0x0a 0x1e 0x1e 0x1e 0xe10>;
+		battery,temp_table_adc = <0x658d 0x665a 0x674f 0x6882 0x69e1 0x6b81 0x6d82 0x6fbd 0x724f 0x7536 0x785f 0x7c2b 0x7fe7 0x83e7 0x8832 0x8c57 0x906e 0x9421 0x979f 0x9a92 0x9d3f 0x9f76 0xa13a>;
+		battery,temp_table_data = <0x384 0x352 0x320 0x2ee 0x2bc 0x28a 0x258 0x226 0x1f4 0x1c2 0x190 0x15e 0x12c 0xfa 0xc8 0x96 0x64 0x32 0x00 0xffffffce 0xffffff9c 0xffffff6a 0xffffff38>;
+		battery,adc_check_count = <0x05>;
+		battery,cable_check_type = <0x04>;
+		battery,cable_source_type = <0x01>;
+		battery,polling_type = <0x01>;
+		battery,monitor_initial_count = <0x00>;
+		battery,battery_check_type = <0x00>;
+		battery,check_count = <0x00>;
+		battery,check_adc_max = <0x5a0>;
+		battery,check_adc_min = <0x00>;
+		battery,ovp_uvlo_check_type = <0x03>;
+		battery,temp_check_count = <0x01>;
+		battery,temp_highlimit_threshold_event = <0x320>;
+		battery,temp_highlimit_recovery_event = <0x2ee>;
+		battery,temp_high_threshold_event = <0x1f4>;
+		battery,temp_high_recovery_event = <0x1c2>;
+		battery,temp_low_threshold_event = <0x00>;
+		battery,temp_low_recovery_event = <0x32>;
+		battery,temp_highlimit_threshold_normal = <0x320>;
+		battery,temp_highlimit_recovery_normal = <0x2ee>;
+		battery,temp_high_threshold_normal = <0x1f4>;
+		battery,temp_high_recovery_normal = <0x1c2>;
+		battery,temp_low_threshold_normal = <0x00>;
+		battery,temp_low_recovery_normal = <0x32>;
+		battery,temp_highlimit_threshold_lpm = <0x320>;
+		battery,temp_highlimit_recovery_lpm = <0x2ee>;
+		battery,temp_high_threshold_lpm = <0x1f4>;
+		battery,temp_high_recovery_lpm = <0x1c2>;
+		battery,temp_low_threshold_lpm = <0x00>;
+		battery,temp_low_recovery_lpm = <0x32>;
+		battery,full_check_type = <0x02>;
+		battery,full_check_type_2nd = <0x02>;
+		battery,full_check_count = <0x01>;
+		battery,chg_gpio_full_check = <0x00>;
+		battery,chg_polarity_full_check = <0x01>;
+		battery,mix_high_temp = <0x1a4>;
+		battery,mix_high_chg_temp = <0x1f4>;
+		battery,mix_high_temp_recovery = <0x186>;
+		battery,full_condition_type = <0x09>;
+		battery,full_condition_soc = <0x5d>;
+		battery,full_condition_vcell = <0x109a>;
+		battery,recharge_check_count = <0x01>;
+		battery,recharge_condition_type = <0x04>;
+		battery,recharge_condition_soc = <0x62>;
+		battery,recharge_condition_vcell = <0x10b8>;
+		battery,charging_total_time = <0x3840>;
+		battery,hv_charging_total_time = <0x2a30>;
+		battery,normal_charging_total_time = <0x4650>;
+		battery,usb_charging_total_time = <0x8ca0>;
+		battery,recharging_total_time = <0x1518>;
+		battery,charging_reset_time = <0x00>;
+		qcom,sec-battery-vadc = <&pm8953_vadc>;
+		battery,chg_float_voltage = <0x10fe>;
+		battery,swelling_high_temp_block = <0x19a>;
+		battery,swelling_high_temp_recov = <0x186>;
+		battery,swelling_low_temp_block_1st = <0x96>;
+		battery,swelling_low_temp_recov_1st = <0xc8>;
+		battery,swelling_low_temp_block_2nd = <0x32>;
+		battery,swelling_low_temp_recov_2nd = <0x64>;
+		battery,swelling_low_temp_current = <0x348>;
+		battery,swelling_low_temp_topoff = <0xaf>;
+		battery,swelling_high_temp_current = <0x4ec>;
+		battery,swelling_high_temp_topoff = <0xaf>;
+		battery,swelling_drop_float_voltage = <0x1036>;
+		battery,swelling_high_rechg_voltage = <0xfa0>;
+		battery,swelling_low_rechg_voltage = <0xfa0>;
+		battery,siop_event_check_type = <0x01>;
+		battery,siop_call_cv_current = <0x14a>;
+		battery,siop_call_cc_current = <0x14a>;
+		battery,siop_input_limit_current = <0x4b0>;
+		battery,siop_charging_limit_current = <0x3e8>;
+		battery,age_data = <0x00 0x10fe 0x10b8 0x109a 0x5d 0xc8 0x10ea 0x10a4 0x1081 0x5c 0xfa 0x10d6 0x1090 0x1074 0x5b 0x12c 0x10c2 0x107c 0x105b 0x5a 0x3e8 0x1090 0x104a 0x1029 0x59>;
+		battery,max_input_voltage = <0x2ee0>;
+		battery,max_input_current = <0xb22>;
+		battery,enable_sysovlo_irq;
+		battery,standard_curr = <0x60e>;
+		battery,expired_time = <0x3714>;
+		battery,recharging_expired_time = <0x1518>;
+		battery,battery_full_capacity = <0xdac>;
+		battery,cisd_max_voltage_thr = <0x1388>;
+		battery,cisd_alg_index = <0x07>;
+		battery,full_chg_current_margin = <0x00>;
+		battery,adc_channels = <0x13>;
+		battery,channel_names = "adc-temp";
+		battery,channel_cells = <0x01>;
+	};
+	sm5708-charger {
+		status = "disable";
+		compatible = "samsung,sm5708-charger";
+		battery,chg_gpio_en = <&tlmm 34 0x00>;
+		battery,chg_polarity_en = <0x00>;
+		battery,chg_gpio_status = <0x00>;
+		battery,chg_polarity_status = <0x00>;
+		battery,chg_float_voltage = <0x10fe>;
+	};
+	mux_sel {
+		compatible = "samsung,sec-mux-sel";
+		mux_sel,mux_sel_1_en = <0x01>;
+		mux_sel,mux_sel_1 = <&pm8953_gpios 7 0x00>;
+		mux_sel,mux_sel_1_type = <0x14>;
+		mux_sel,mux_sel_1_mpp = <0x04>;
+		mux_sel,mux_sel_1_low = <0x04>;
+		mux_sel,mux_sel_1_high = <0x02>;
+	};
+	battery_params {
+		battery,id = <0x00>;
+		battery0,battery_type = <0x10fe>;
+		battery0,battery_table0 = <0x1400 0x1b33 0x1ccd 0x1d6b 0x1d97 0x1ddb 0x1e28 0x1e75 0x1ecd 0x1f62 0x1fa8 0x1fd3 0x2064 0x20e9 0x225a 0x2400>;
+		battery0,battery_table1 = <0x00 0x31 0xd2 0x15e 0x358 0x4be 0x78a 0xbbc 0xe88 0x10a5 0x120b 0x1371 0x14d7 0x16f3 0x1b6b 0x1b72>;
+		battery0,rce_value = <0x4e1 0x3e6 0x1d7>;
+		battery0,rs_value = <0x7a 0x147 0x146 0x3800 0x7a>;
+		battery0,misc = <0x60>;
+		battery0,topoff_soc = <0x00 0x03 0x15e>;
+		battery0,vit_period = <0x3506>;
+		battery0,dtcd_value = <0x01>;
+		battery0,volt_cal = <0x8000>;
+		battery0,curr_offset = <0x01 0x00>;
+		battery0,p_curr_cal = <0x8a>;
+		battery0,n_curr_cal = <0x8a>;
+		battery0,mix_value = <0x403 0x04>;
+		battery0,temp_std = <0x19>;
+		battery0,temp_cal = <0x01 0x06 0x01 0x0b 0xffffffff 0x01 0x06 0x01 0x09 0x01>;
+		battery0,ext_temp_cal = <0x00 0x02 0x01 0x02 0x01 0x01 0x02 0x04 0x02 0x04>;
+		battery0,temp_volcal = <0x01 0x0f 0x01>;
+		battery0,temp_offset = <0x01 0x0b 0x01 0x01 0x08 0xffffffff>;
+		battery0,cycle_cfg = <0x07 0x01 0x03>;
+		battery0,curr_lcal = <0x00 0x8888 0x8888 0x8888>;
+		battery0,tem_poff = <0xd48 0x32 0xd16 0x32>;
+		battery0,v_offset_cancel = <0x01 0x00 0x64 0x0a>;
+		battery0,v_alarm = <0xc80>;
+		battery0,v_max_table = <0x225a 0x2235 0x220f 0x21ea 0x218d>;
+		battery0,q_max_table = <0x1b6b 0x1b09 0x1aa6 0x1a44 0x194d>;
+		battery0,data_ver = <0x02>;
+	};
+	cable-info {
+		default_input_current = <0x5dc>;
+		default_charging_current = <0x708>;
+		full_check_current_1st = <0x15e>;
+		full_check_current_2nd = <0xaf>;
+
+		current_group_1 {
+			cable_number = <0x01 0x02 0x04 0x13 0x15 0x16 0x17 0x1e>;
+			input_current = <0x1f4>;
+			charging_current = <0x1f4>;
+		};
+
+		current_group_2 {
+			cable_number = <0x19 0x1f>;
+			input_current = <0x3e8>;
+			charging_current = <0x3e8>;
+		};
+
+		current_group_3 {
+			cable_number = <0x05 0x20>;
+			input_current = <0x5dc>;
+			charging_current = <0x5dc>;
+		};
+
+		current_group_4 {
+			cable_number = <0x06 0x07 0x08 0x11 0x12>;
+			input_current = <0x672>;
+			charging_current = <0x9c4>;
+		};
+
+		current_group_5 {
+			cable_number = <0x09>;
+			input_current = <0x672>;
+			charging_current = <0x9c4>;
+		};
+
+		current_group_6 {
+			cable_number = <0x0a 0x0c 0x0e 0x0f 0x1b>;
+			input_current = <0x384>;
+			charging_current = <0x4e2>;
+		};
+
+		current_group_7 {
+			cable_number = <0x0d>;
+			input_current = <0x2bc>;
+			charging_current = <0x4e2>;
+		};
+
+		current_group_8 {
+			cable_number = <0x18>;
+			input_current = <0x3e8>;
+			charging_current = <0x1c2>;
+		};
+
+		current_group_9 {
+			cable_number = <0x1a>;
+			input_current = <0x7d0>;
+			charging_current = <0x708>;
+		};
+
+		current_group_10 {
+			cable_number = <0x0b 0x10 0x1c>;
+			input_current = <0x28a>;
+			charging_current = <0x4e2>;
+		};
+
+		current_group_11 {
+			cable_number = <0x1d>;
+			input_current = <0x1f4>;
+			charging_current = <0x4e2>;
+		};
+	};
+};

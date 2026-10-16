@@ -427,3 +427,5 @@
 		status = "okay";
 	};
 };
+
+#include "sdm450-sec-a6plte-battery.dtsi"

@@ -218,4 +218,12 @@ source "drivers/afc/Kconfig"
 
 source "drivers/adsp_factory/Kconfig"
 
+source "drivers/staging/samsung/sec_notifier/Kconfig"
+
+source "drivers/battery_v2/Kconfig"
+
+source "drivers/muic/Kconfig"
+
+source "drivers/muic/universal/Kconfig"
+
 endmenu

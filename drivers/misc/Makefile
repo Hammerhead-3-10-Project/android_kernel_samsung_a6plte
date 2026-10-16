@@ -89,3 +89,4 @@ obj-y                           += huaqin/
 # huaqin added by tangqingyong for HS60-53 at 20190718 end
 
 obj-$(CONFIG_OKL4_LINK_SHBUF)    += okl4-link-shbuf.o
+obj-$(CONFIG_SEC_MPP_SHARE)	+= sec_mux_sel.o

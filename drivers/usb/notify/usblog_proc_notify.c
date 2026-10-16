@@ -20,7 +20,7 @@
 #include <linux/spinlock.h>
 #include <linux/seq_file.h>
 /* clock.h should be included since kernel 4.14 */
-#include <linux/sched/clock.h>
+#include <linux/sched.h>
 #include <linux/usb_notify.h>
 
 #define USBLOG_MAX_BUF_SIZE	(1 << 6) /* 64 */

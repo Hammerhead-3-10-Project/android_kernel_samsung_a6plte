@@ -745,4 +745,12 @@ config LEDS_QPNP_VIBRATOR
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
+config LEDS_SM5708
+	tristate "LED support for SM5708 Flashlight"
+	depends on I2C && MFD_SM5708
+	help
+	  This option enables support for on-chip LED driver on
+	  Silicon-mitus SM5708 includes Torch, Flash.
+
+
 endif # NEW_LEDS

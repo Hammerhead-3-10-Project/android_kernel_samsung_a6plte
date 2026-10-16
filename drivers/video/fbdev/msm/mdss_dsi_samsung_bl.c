@@ -93,6 +93,7 @@ static int ss_read(struct mdss_dsi_ctrl_pdata *ctrl, char reg, int off, int len,
 		ret = mdss_dsi_panel_cmd_read(ctrl, reg, 0, NULL, rx, n);
 		if (ret < 0)
 			return ret;
+		pr_info("ss_bl: read %02x off=%d n=%d ret=%d:%*phC\n", reg, off + done, n, ret, n, rx);
 		memcpy(out + done, rx, n);
 		done += n;
 	}

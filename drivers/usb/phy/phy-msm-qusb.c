@@ -613,6 +613,17 @@ static int qusb_phy_init(struct usb_phy *phy)
 			pll_lock_fail = true;
 	}
 
+	dev_info(phy->dev,
+		 "dbg init: major_rev=%d pll=%02x tune1..5=%02x %02x %02x %02x %02x pwr=%02x utmi_ctrl2=%02x\n",
+		 qphy->major_rev, reg,
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE1),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE2),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE3),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE4),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE5),
+		 readb_relaxed(qphy->base + QUSB2PHY_PWR_CTRL1),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_UTMI_CTRL2));
+
 	if (pll_lock_fail) {
 		dev_err(phy->dev, "QUSB PHY PLL LOCK fails:%x\n", reg);
 		WARN_ON(1);

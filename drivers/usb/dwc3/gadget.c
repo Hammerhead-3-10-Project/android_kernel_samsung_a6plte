@@ -2080,6 +2080,11 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 	if (!timeout) {
 		dev_err(dwc->dev, "failed to %s controller\n",
 				is_on ? "start" : "stop");
+		dev_err(dwc->dev, "dbg: DSTS=%08x DCTL=%08x GUSB2PHYCFG=%08x GCTL=%08x\n",
+			dwc3_readl(dwc->regs, DWC3_DSTS),
+			dwc3_readl(dwc->regs, DWC3_DCTL),
+			dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0)),
+			dwc3_readl(dwc->regs, DWC3_GCTL));
 		if (is_on)
 			dbg_event(0xFF, "STARTTOUT", reg);
 		else

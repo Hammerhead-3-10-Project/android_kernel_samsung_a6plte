@@ -2432,6 +2432,7 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	struct dwc3		*dwc = gadget_to_dwc(g);
 	unsigned long		flags;
 	int			ret = 0;
+	dev_info(dwc->dev, "dbg: gadget_start (driver %p)\n", driver);
 
 	spin_lock_irqsave(&dwc->lock, flags);
 

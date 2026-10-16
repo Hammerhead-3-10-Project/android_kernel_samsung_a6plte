@@ -26,6 +26,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/usb/phy.h>
 #include <linux/reset.h>
+#include <linux/workqueue.h>
 
 #define QUSB2PHY_PLL_STATUS	0x38
 #define QUSB2PHY_PLL_LOCK	BIT(5)
@@ -125,6 +126,8 @@ struct qusb_phy {
 	void __iomem		*ref_clk_base;
 	void __iomem		*tcsr_clamp_dig_n;
 	void __iomem		*tcsr_phy_clk_scheme_sel;
+	struct delayed_work	dbg_work;
+	u32			dbg_sel;
 
 	struct clk		*ref_clk_src;
 	struct clk		*ref_clk;
@@ -572,6 +575,7 @@ static int qusb_phy_init(struct usb_phy *phy)
 		u32 sel = readl_relaxed(qphy->tcsr_phy_clk_scheme_sel);
 
 		qphy->is_se_clk = !!(sel & BIT(0));
+		qphy->dbg_sel = sel;
 		dev_info(phy->dev, "TCSR clk scheme sel=0x%x -> %s clock\n",
 			 sel, qphy->is_se_clk ? "single-ended" : "differential");
 	}
@@ -925,6 +929,23 @@ static int qusb_phy_regulator_init(struct qusb_phy *qphy)
 	return 0;
 }
 
+/* Bring-up: repeat the PHY state late, the early boot log is overwritten */
+static void qusb_phy_dbg_work(struct work_struct *w)
+{
+	struct qusb_phy *qphy = container_of(to_delayed_work(w),
+					struct qusb_phy, dbg_work);
+
+	dev_info(qphy->phy.dev,
+		 "dbg: TCSR clk scheme sel=0x%x se_clk=%d major_rev=%d tune1=%02x tune2=%02x tune3=%02x tune4=%02x tune5=%02x pll_status=%02x\n",
+		 qphy->dbg_sel, qphy->is_se_clk, qphy->major_rev,
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE1),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE2),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE3),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE4),
+		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE5),
+		 readb_relaxed(qphy->base + QUSB2PHY_PLL_STATUS));
+}
+
 static int qusb_phy_probe(struct platform_device *pdev)
 {
 	struct qusb_phy *qphy;
@@ -1209,6 +1230,8 @@ static int qusb_phy_probe(struct platform_device *pdev)
 
 	mutex_init(&qphy->phy_lock);
 	platform_set_drvdata(pdev, qphy);
+	INIT_DELAYED_WORK(&qphy->dbg_work, qusb_phy_dbg_work);
+	schedule_delayed_work(&qphy->dbg_work, 25 * HZ);
 
 	qphy->phy.label			= "msm-qusb-phy";
 	qphy->phy.init			= qusb_phy_init;

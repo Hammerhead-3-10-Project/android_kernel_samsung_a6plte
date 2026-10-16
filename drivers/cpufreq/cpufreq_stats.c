@@ -628,6 +628,9 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 			cpufreq_powerstats_create(cpu_num, table, count);
 	}
 
+	if (!per_cpu(all_cpufreq_stats, policy->cpu))
+		cpufreq_allstats_create(policy->cpu);
+
 	if (val == CPUFREQ_CREATE_POLICY)
 		ret = __cpufreq_stats_create_table(policy, table, count);
 

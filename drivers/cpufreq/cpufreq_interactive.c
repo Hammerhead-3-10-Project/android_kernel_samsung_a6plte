@@ -1073,7 +1073,7 @@ static ssize_t store_lpm_disable_freq(struct cpufreq_interactive_tunables *tunab
 	int ret;
 	long unsigned int val;
 
-	ret = strict_strtoul(buf, 0, &val);
+	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
 	tunables->lpm_disable_freq = val;
@@ -1611,6 +1611,16 @@ static struct attribute_group *get_sysfs_attr(void)
 	else
 		return &interactive_attr_group_gov_sys;
 }
+
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE
+static
+#endif
+struct cpufreq_governor cpufreq_gov_interactive = {
+	.name = "interactive",
+	.governor = cpufreq_governor_interactive,
+	.max_transition_latency = 10000000,
+	.owner = THIS_MODULE,
+};
 
 static void cpufreq_interactive_nop_timer(unsigned long data)
 {

@@ -1480,6 +1480,8 @@ static int eth_stop(struct net_device *net)
 static u8 host_ethaddr[ETH_ALEN];
 #endif
 
+static u8 host_ethaddr[ETH_ALEN];
+
 static int get_ether_addr(const char *str, u8 *dev_addr)
 {
 	if (str) {
@@ -1525,6 +1527,17 @@ static int get_host_ether_addr(u8 *str, u8 *dev_addr)
 #endif
 
 static int ether_ioctl(struct net_device *, struct ifreq *, int);
+
+static int get_host_ether_addr(u8 *str, u8 *dev_addr)
+{
+	memcpy(dev_addr, str, ETH_ALEN);
+	if (is_valid_ether_addr(dev_addr))
+		return 0;
+
+	random_ether_addr(dev_addr);
+	memcpy(str, dev_addr, ETH_ALEN);
+	return 1;
+}
 
 static const struct net_device_ops eth_netdev_ops = {
 	.ndo_open		= eth_open,

@@ -206,6 +206,12 @@ config USB_F_ACC
 config USB_F_IPC
 	tristate
 
+config USB_F_MTP
+	tristate
+
+config USB_F_PTP
+	tristate
+
 choice
 	tristate "USB Gadget Drivers"
 	default USB_ETH

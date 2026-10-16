@@ -294,6 +294,23 @@ preserve_boot_args:
 ENDPROC(preserve_boot_args)
 
 /*
+ * Preserve the arguments passed by the bootloader in x0 .. x3
+ */
+preserve_boot_args:
+	mov	x21, x0				// x21=FDT
+
+	adr_l	x0, boot_args			// record the contents of
+	stp	x21, x1, [x0]			// x0 .. x3 at kernel entry
+	stp	x2, x3, [x0, #16]
+
+	dmb	sy				// needed before dc ivac with
+						// MMU off
+
+	add	x1, x0, #0x20			// 4 x 8 bytes
+	b	__inval_cache_range		// tail call
+ENDPROC(preserve_boot_args)
+
+/*
  * Determine validity of the x21 FDT pointer.
  * The dtb must be 8-byte aligned and live in the first 512M of memory.
  */

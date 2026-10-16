@@ -284,6 +284,14 @@ static int __kprobes do_page_fault(unsigned long addr, unsigned int esr,
 		mm_flags |= FAULT_FLAG_WRITE;
 	}
 
+	if (is_permission_fault(esr) && (addr < USER_DS)) {
+		if (get_fs() == KERNEL_DS)
+			panic("Accessing user space memory with fs=KERNEL_DS");
+
+		if (!search_exception_tables(regs->pc))
+			panic("Accessing user space memory outside uaccess.h routines");
+	}
+
 	/*
 	 * PAN bit set implies the fault happened in kernel space, but not
 	 * in the arch's user access functions.

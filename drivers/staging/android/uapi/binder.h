@@ -339,6 +339,11 @@ struct binder_transaction_data_sg {
 	binder_size_t buffers_size;
 };
 
+struct binder_transaction_data_sg {
+	struct binder_transaction_data transaction_data;
+	binder_size_t buffers_size;
+};
+
 struct binder_ptr_cookie {
 	binder_uintptr_t ptr;
 	binder_uintptr_t cookie;

@@ -140,8 +140,8 @@ static inline void flush_tlb_page(struct vm_area_struct *vma,
 }
 
 /*
- * This is meant to avoid soft lock-ups on large TLB flushing ranges and not
- * necessarily a performance improvement.
+ * Used to invalidate the TLB (walk caches) corresponding to intermediate page
+ * table levels (pgd/pud/pmd).
  */
 #define MAX_TLB_RANGE	(1024UL << PAGE_SHIFT)
 

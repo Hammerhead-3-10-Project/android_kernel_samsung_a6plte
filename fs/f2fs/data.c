@@ -2539,6 +2539,14 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 						 current->comm);
 	}
 
+	if (trace_android_fs_dataread_start_enabled() && (rw == READ))
+		trace_android_fs_dataread_start(inode, offset,
+						count, current->pid,
+						current->comm);
+	if (trace_android_fs_datawrite_start_enabled() && (rw == WRITE))
+		trace_android_fs_datawrite_start(inode, offset, count,
+						 current->pid, current->comm);
+
 	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
 
 	/* if (rw == WRITE && whint_mode == WHINT_MODE_OFF)

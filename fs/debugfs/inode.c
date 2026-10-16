@@ -196,6 +196,18 @@ static const struct dentry_operations debugfs_dops = {
 	.d_automount = debugfs_automount,
 };
 
+static struct vfsmount *debugfs_automount(struct path *path)
+{
+	struct vfsmount *(*f)(void *);
+	f = (struct vfsmount *(*)(void *))path->dentry->d_fsdata;
+	return f(path->dentry->d_inode->i_private);
+}
+
+static const struct dentry_operations debugfs_dops = {
+	.d_delete = always_delete_dentry,
+	.d_automount = debugfs_automount,
+};
+
 static int debug_fill_super(struct super_block *sb, void *data, int silent)
 {
 	static struct tree_descr debug_files[] = {{""}};

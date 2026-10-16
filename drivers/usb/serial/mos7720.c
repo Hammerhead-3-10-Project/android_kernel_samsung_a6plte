@@ -1228,6 +1228,7 @@ static int mos7720_write(struct tty_struct *tty, struct usb_serial_port *port,
 					       GFP_KERNEL);
 		if (!urb->transfer_buffer)
 			goto exit;
+		}
 	}
 	transfer_size = min(count, URB_TRANSFER_BUFFER_SIZE);
 

@@ -212,7 +212,7 @@ void f2fs_msg(struct super_block *sb, const char *level, const char *fmt, ...)
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-	printk("%sF2FS-fs (%s): %pV\n", level, sb->s_id, &vaf);
+	printk_ratelimited("%sF2FS-fs (%s): %pV\n", level, sb->s_id, &vaf);
 	va_end(args);
 }
 
@@ -900,8 +900,12 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
 	init_rwsem(&fi->i_mmap_sem);
 	init_rwsem(&fi->i_xattr_sem);
 
+#ifdef CONFIG_QUOTA
+	fi->i_reserved_quota = 0;
+#endif
 	/* Will be used by directory only */
 	fi->i_dir_level = F2FS_SB(sb)->dir_level;
+
 	return &fi->vfs_inode;
 }
 
@@ -1402,6 +1406,17 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
 	if (F2FS_OPTION(sbi).test_dummy_encryption)
 		seq_puts(seq, ",test_dummy_encryption");
 #endif
+#ifdef CONFIG_QUOTA
+	if (test_opt(sbi, QUOTA))
+		seq_puts(seq, ",quota");
+	if (test_opt(sbi, USRQUOTA))
+		seq_puts(seq, ",usrquota");
+	if (test_opt(sbi, GRPQUOTA))
+		seq_puts(seq, ",grpquota");
+	if (test_opt(sbi, PRJQUOTA))
+		seq_puts(seq, ",prjquota");
+#endif
+	f2fs_show_quota_options(seq, sbi->sb);
 
 	if (F2FS_OPTION(sbi).alloc_mode == ALLOC_MODE_DEFAULT)
 		seq_printf(seq, ",alloc_mode=%s", "default");
@@ -1469,6 +1484,11 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 #ifdef CONFIG_QUOTA
 	int i, j;
 #endif
+#ifdef CONFIG_QUOTA
+	int s_jquota_fmt;
+	char *s_qf_names[F2FS_MAXQUOTAS];
+	int i, j;
+#endif
 
 	/*
 	 * Save the old mount options in case we
@@ -1491,6 +1511,23 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 			}
 		} else {
 			org_mount_opt.s_qf_names[i] = NULL;
+		}
+	}
+#endif
+
+#ifdef CONFIG_QUOTA
+	s_jquota_fmt = sbi->s_jquota_fmt;
+	for (i = 0; i < F2FS_MAXQUOTAS; i++) {
+		if (sbi->s_qf_names[i]) {
+			s_qf_names[i] = kstrdup(sbi->s_qf_names[i],
+							 GFP_KERNEL);
+			if (!s_qf_names[i]) {
+				for (j = 0; j < i; j++)
+					kfree(s_qf_names[j]);
+				return -ENOMEM;
+			}
+		} else {
+			s_qf_names[i] = NULL;
 		}
 	}
 #endif

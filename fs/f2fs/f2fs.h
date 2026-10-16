@@ -410,10 +410,30 @@ struct discard_policy {
 	unsigned int granularity;	/* discard granularity */
 };
 
+enum {
+	DPOLICY_BG,
+	DPOLICY_FORCE,
+	DPOLICY_FSTRIM,
+	DPOLICY_UMOUNT,
+	MAX_DPOLICY,
+};
+
+struct discard_policy {
+	int type;			/* type of discard */
+	unsigned int min_interval;	/* used for candidates exist */
+	unsigned int max_interval;	/* used for candidates not exist */
+	unsigned int max_requests;	/* # of discards issued per round */
+	unsigned int io_aware_gran;	/* minimum granularity discard not be aware of I/O */
+	bool io_aware;			/* issue discard in idle time */
+	bool sync;			/* submit discard with REQ_SYNC flag */
+	unsigned int granularity;	/* discard granularity */
+};
+
 struct discard_cmd_control {
 	struct task_struct *f2fs_issue_discard;	/* discard thread */
 	struct list_head entry_list;		/* 4KB discard entry list */
 	struct list_head pend_list[MAX_PLIST_NUM];/* store pending entries */
+	unsigned char pend_list_tag[MAX_PLIST_NUM];/* tag for pending entries */
 	struct list_head wait_list;		/* store on-flushing entries */
 	struct list_head fstrim_list;		/* in-flight discard from fstrim */
 	wait_queue_head_t discard_wait_queue;	/* waiting queue for wake-up */
@@ -755,12 +775,13 @@ struct f2fs_map_blocks {
 };
 
 /* for flag in get_data_block */
-#define F2FS_GET_BLOCK_READ		0
-#define F2FS_GET_BLOCK_DIO		1
-#define F2FS_GET_BLOCK_FIEMAP		2
-#define F2FS_GET_BLOCK_BMAP		3
-#define F2FS_GET_BLOCK_PRE_DIO		4
-#define F2FS_GET_BLOCK_PRE_AIO		5
+enum {
+	F2FS_GET_BLOCK_DEFAULT,
+	F2FS_GET_BLOCK_FIEMAP,
+	F2FS_GET_BLOCK_BMAP,
+	F2FS_GET_BLOCK_PRE_DIO,
+	F2FS_GET_BLOCK_PRE_AIO,
+};
 
 /*
  * i_advise uses FADVISE_XXX_BIT. We can add additional hints later.
@@ -2334,11 +2355,20 @@ static inline struct bio *f2fs_bio_alloc(int npages)
 {
 	struct bio *bio;
 
-	/* No failure on bio allocation */
-	bio = bio_alloc(GFP_NOIO, npages);
-	if (!bio)
-		bio = bio_alloc(GFP_NOIO | __GFP_NOFAIL, npages);
-	return bio;
+	if (no_fail) {
+		/* No failure on bio allocation */
+		bio = bio_alloc(GFP_NOIO, npages);
+		if (!bio)
+			bio = bio_alloc(GFP_NOIO | __GFP_NOFAIL, npages);
+		return bio;
+	}
+#ifdef CONFIG_F2FS_FAULT_INJECTION
+	if (time_to_inject(sbi, FAULT_ALLOC_BIO)) {
+		f2fs_show_injection_info(FAULT_ALLOC_BIO);
+		return NULL;
+	}
+#endif
+	return bio_alloc(GFP_KERNEL, npages);
 }
 
 static inline void f2fs_radix_tree_insert(struct radix_tree_root *root,
@@ -3673,6 +3703,31 @@ F2FS_FEATURE_FUNCS(flexible_inline_xattr, FLEXIBLE_INLINE_XATTR);
 F2FS_FEATURE_FUNCS(quota_ino, QUOTA_INO);
 F2FS_FEATURE_FUNCS(inode_crtime, INODE_CRTIME);
 F2FS_FEATURE_FUNCS(lost_found, LOST_FOUND);
+
+static inline int f2fs_sb_has_extra_attr(struct super_block *sb)
+{
+	return F2FS_HAS_FEATURE(sb, F2FS_FEATURE_EXTRA_ATTR);
+}
+
+static inline int f2fs_sb_has_project_quota(struct super_block *sb)
+{
+	return F2FS_HAS_FEATURE(sb, F2FS_FEATURE_PRJQUOTA);
+}
+
+static inline int f2fs_sb_has_inode_chksum(struct super_block *sb)
+{
+	return F2FS_HAS_FEATURE(sb, F2FS_FEATURE_INODE_CHKSUM);
+}
+
+static inline int f2fs_sb_has_flexible_inline_xattr(struct super_block *sb)
+{
+	return F2FS_HAS_FEATURE(sb, F2FS_FEATURE_FLEXIBLE_INLINE_XATTR);
+}
+
+static inline int f2fs_sb_has_quota_ino(struct super_block *sb)
+{
+	return F2FS_HAS_FEATURE(sb, F2FS_FEATURE_QUOTA_INO);
+}
 
 #ifdef CONFIG_BLK_DEV_ZONED
 static inline int get_blkz_type(struct f2fs_sb_info *sbi,

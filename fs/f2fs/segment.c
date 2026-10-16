@@ -634,7 +634,6 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi, nid_t ino)
 	cmd.ino = ino;
 	init_completion(&cmd.wait);
 
-	atomic_inc(&fcc->issing_flush);
 	llist_add(&cmd.llnode, &fcc->issue_list);
 
 	/* update issue_list before we wake up issue_flush thread */
@@ -901,6 +900,8 @@ static void __remove_discard_cmd(struct f2fs_sb_info *sbi,
 		return;
 	}
 	spin_unlock_irqrestore(&dc->lock, flags);
+
+	trace_f2fs_remove_discard(dc->bdev, dc->start, dc->len);
 
 	f2fs_bug_on(sbi, dc->ref);
 
@@ -2128,7 +2129,7 @@ bool is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr)
 	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
 		return true;
 
-	mutex_lock(&sit_i->sentry_lock);
+	down_read(&sit_i->sentry_lock);
 
 	segno = GET_SEGNO(sbi, blkaddr);
 	se = get_seg_entry(sbi, segno);
@@ -2137,7 +2138,7 @@ bool is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr)
 	if (f2fs_test_bit(offset, se->ckpt_valid_map))
 		is_cp = true;
 
-	mutex_unlock(&sit_i->sentry_lock);
+	up_read(&sit_i->sentry_lock);
 
 	return is_cp;
 }
@@ -2205,12 +2206,8 @@ void f2fs_update_meta_page(struct f2fs_sb_info *sbi,
 void update_meta_page(struct f2fs_sb_info *sbi, void *src, block_t blk_addr)
 {
 	struct page *page = grab_meta_page(sbi, blk_addr);
-	void *dst = page_address(page);
 
-	if (src)
-		memcpy(dst, src, PAGE_SIZE);
-	else
-		memset(dst, 0, PAGE_SIZE);
+	memcpy(page_address(page), src, PAGE_SIZE);
 	set_page_dirty(page);
 	f2fs_put_page(page, 1);
 }
@@ -2729,6 +2726,14 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
 					start_block, end_block);
 		range->len = F2FS_BLK_TO_BYTES(trimmed);
 	}
+
+	start_block = START_BLOCK(sbi, start_segno);
+	end_block = START_BLOCK(sbi, min(cur_segno, end_segno) + 1);
+
+	init_discard_policy(&dpolicy, DPOLICY_FSTRIM, cpc.trim_minlen);
+	__issue_discard_cmd_range(sbi, &dpolicy, start_block, end_block);
+	trimmed = __wait_discard_cmd_range(sbi, &dpolicy,
+					start_block, end_block);
 out:
 	if (!err)
 		range->len = F2FS_BLK_TO_BYTES(trimmed);
@@ -2953,8 +2958,9 @@ void f2fs_allocate_data_block(struct f2fs_sb_info *sbi, struct page *page,
 	stat_inc_block_count(sbi, curseg);
 
 	/*
-	 * SIT information should be updated after segment allocation,
-	 * since we need to keep dirty segments precisely under SSR.
+	 * segment dirty status should be updated after segment allocation,
+	 * so we just need to update status only one time after previous
+	 * segment being closed.
 	 */
 	update_sit_entry(sbi, *new_blkaddr, 1);
 	if (GET_SEGNO(sbi, old_blkaddr) != NULL_SEGNO)
@@ -3036,6 +3042,8 @@ reallocate:
 	if (fio->retry) {
 		fio->old_blkaddr = fio->new_blkaddr;
 		goto reallocate;
+	} else if (!err) {
+		update_device_state(fio);
 	}
 
 	update_device_state(fio);

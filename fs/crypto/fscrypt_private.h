@@ -146,4 +146,7 @@ extern bool fscrypt_fname_encrypted_size(const struct inode *inode,
 /* keyinfo.c */
 extern void __exit fscrypt_essiv_cleanup(void);
 
+/* keyinfo.c */
+extern void __exit fscrypt_essiv_cleanup(void);
+
 #endif /* _FSCRYPT_PRIVATE_H */

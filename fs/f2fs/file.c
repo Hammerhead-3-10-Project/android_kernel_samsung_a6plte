@@ -2410,6 +2410,7 @@ static int f2fs_move_file_range(struct file *file_in, loff_t pos_in,
 	}
 
 	inode_lock(src);
+	down_write(&F2FS_I(src)->dio_rwsem[WRITE]);
 	if (src != dst) {
 		ret = -EBUSY;
 		if (!inode_trylock(dst))
@@ -2484,9 +2485,12 @@ static int f2fs_move_file_range(struct file *file_in, loff_t pos_in,
 out_src:
 	up_write(&F2FS_I(src)->i_gc_rwsem[WRITE]);
 out_unlock:
-	if (src != dst)
+	if (src != dst) {
+		up_write(&F2FS_I(dst)->dio_rwsem[WRITE]);
 		inode_unlock(dst);
+	}
 out:
+	up_write(&F2FS_I(src)->dio_rwsem[WRITE]);
 	inode_unlock(src);
 	return ret;
 }

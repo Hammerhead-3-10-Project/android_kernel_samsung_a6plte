@@ -61,6 +61,9 @@ static int gc_thread_func(void *data)
 		if (!sb_start_write_trylock(sbi->sb))
 			continue;
 
+		if (!sb_start_write_trylock(sbi->sb))
+			continue;
+
 		/*
 		 * [GC triggering condition]
 		 * 0. GC is not conducted currently.
@@ -270,30 +273,11 @@ static unsigned int get_cb_cost(struct f2fs_sb_info *sbi, unsigned int segno)
 	return UINT_MAX - ((100 * (100 - u) * age) / (100 + u));
 }
 
-static unsigned int get_greedy_cost(struct f2fs_sb_info *sbi,
-						unsigned int segno)
-{
-	unsigned int valid_blocks =
-			get_valid_blocks(sbi, segno, true);
-
-	return IS_DATASEG(get_seg_entry(sbi, segno)->type) ?
-				valid_blocks * 2 : valid_blocks;
-}
-
-static unsigned int get_ssr_cost(struct f2fs_sb_info *sbi,
-						unsigned int segno)
-{
-	struct seg_entry *se = get_seg_entry(sbi, segno);
-
-	return se->ckpt_valid_blocks > se->valid_blocks ?
-				se->ckpt_valid_blocks : se->valid_blocks;
-}
-
 static inline unsigned int get_gc_cost(struct f2fs_sb_info *sbi,
 			unsigned int segno, struct victim_sel_policy *p)
 {
 	if (p->alloc_mode == SSR)
-		return get_ssr_cost(sbi, segno);
+		return get_seg_entry(sbi, segno)->ckpt_valid_blocks;
 
 	/* alloc_mode == LFS */
 	if (p->gc_mode == GC_GREEDY)
@@ -829,6 +813,8 @@ write_page:
 
 	f2fs_update_iostat(fio.sbi, FS_GC_DATA_IO, F2FS_BLKSIZE);
 
+	f2fs_update_iostat(fio.sbi, FS_GC_DATA_IO, F2FS_BLKSIZE);
+
 	f2fs_update_data_blkaddr(&dn, newaddr);
 	set_inode_flag(inode, FI_APPEND_WRITE);
 	if (page->index == 0)
@@ -1166,6 +1152,15 @@ int f2fs_gc(struct f2fs_sb_info *sbi, bool sync,
 	unsigned long long last_skipped = sbi->skipped_atomic_files[FG_GC];
 	unsigned long long first_skipped;
 	unsigned int skipped_round = 0, round = 0;
+
+	trace_f2fs_gc_begin(sbi->sb, sync, background,
+				get_pages(sbi, F2FS_DIRTY_NODES),
+				get_pages(sbi, F2FS_DIRTY_DENTS),
+				get_pages(sbi, F2FS_DIRTY_IMETA),
+				free_sections(sbi),
+				free_segments(sbi),
+				reserved_segments(sbi),
+				prefree_segments(sbi));
 
 	trace_f2fs_gc_begin(sbi->sb, sync, background,
 				get_pages(sbi, F2FS_DIRTY_NODES),

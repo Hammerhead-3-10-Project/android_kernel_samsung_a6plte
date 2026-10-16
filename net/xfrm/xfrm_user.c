@@ -871,6 +871,8 @@ static int copy_to_user_state_extra(struct xfrm_state *x,
 		if (ret)
 			goto out;
 	}
+	if (x->security)
+		ret = copy_sec_ctx(x->security, skb);
 out:
 	return ret;
 }

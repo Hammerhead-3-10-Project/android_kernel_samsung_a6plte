@@ -590,6 +590,11 @@ void clear_wakeup_reasons(void)
 static int wakeup_reason_pm_event(struct notifier_block *notifier,
 		unsigned long pm_event, void *unused)
 {
+#if IS_ENABLED(CONFIG_SUSPEND_TIME)
+	ktime_t temp;
+	struct timespec suspend_time;
+#endif
+
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
 		spin_lock(&resume_reason_lock);

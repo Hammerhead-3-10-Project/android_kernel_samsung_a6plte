@@ -4861,11 +4861,11 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 			int size = 0;
 
 			snprintf(temp_buf, sizeof(temp_buf), "\"%s\":\"%d\"",
-					cisd_data_str[CISD_DATA_RESET_ALG], pcisd->data[CISD_DATA_RESET_ALG]);
+					sec_cisd_data_str[CISD_DATA_RESET_ALG], pcisd->data[CISD_DATA_RESET_ALG]);
 			size = sizeof(temp_buf) - strlen(temp_buf);
 
 			for (j = CISD_DATA_RESET_ALG + 1; j < CISD_DATA_MAX; j++) {
-				snprintf(temp_buf+strlen(temp_buf), size, ",\"%s\":\"%d\"", cisd_data_str[j], pcisd->data[j]);
+				snprintf(temp_buf+strlen(temp_buf), size, ",\"%s\":\"%d\"", sec_cisd_data_str[j], pcisd->data[j]);
 				size = sizeof(temp_buf) - strlen(temp_buf);
 			}
 			i += scnprintf(buf + i, PAGE_SIZE - i, "%s\n", temp_buf);
@@ -4879,13 +4879,13 @@ ssize_t sec_bat_show_attrs(struct device *dev,
 			int size = 0;
 
 			snprintf(temp_buf, sizeof(temp_buf), "\"%s\":\"%d\"",
-				cisd_data_str_d[CISD_DATA_FULL_COUNT_PER_DAY-CISD_DATA_MAX],
+				sec_cisd_data_str_d[CISD_DATA_FULL_COUNT_PER_DAY-CISD_DATA_MAX],
 				pcisd->data[CISD_DATA_FULL_COUNT_PER_DAY]);
 			size = sizeof(temp_buf) - strlen(temp_buf);
 
 			for (j = CISD_DATA_FULL_COUNT_PER_DAY + 1; j < CISD_DATA_MAX_PER_DAY; j++) {
 				snprintf(temp_buf+strlen(temp_buf), size, ",\"%s\":\"%d\"",
-				cisd_data_str_d[j-CISD_DATA_MAX], pcisd->data[j]);
+				sec_cisd_data_str_d[j-CISD_DATA_MAX], pcisd->data[j]);
 				size = sizeof(temp_buf) - strlen(temp_buf);
 			}
 
@@ -9647,7 +9647,7 @@ static int sec_battery_probe(struct platform_device *pdev)
 		sleep_mode = false;
 
 	/* Check High Voltage charging option for wired charging */
-	if (get_afc_mode() == CH_MODE_AFC_DISABLE_VAL) {
+	if (muic_get_afc_mode() == CH_MODE_AFC_DISABLE_VAL) {
 		pr_info("HV wired charging mode is disabled\n");
 		sec_bat_set_current_event(battery,
 			SEC_BAT_CURRENT_EVENT_HV_DISABLE, SEC_BAT_CURRENT_EVENT_HV_DISABLE);

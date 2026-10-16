@@ -447,7 +447,7 @@ extern void muic_disable_otg_detect(void);
 #endif /* s2mu004 */
 
 int get_switch_sel(void);
-int get_afc_mode(void);
+int muic_get_afc_mode(void);
 extern struct device *switch_device;
 #ifdef CONFIG_SEC_FACTORY
 extern void muic_send_attached_muic_cable_intent(int type);

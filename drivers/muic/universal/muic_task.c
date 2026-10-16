@@ -757,7 +757,7 @@ static int muic_probe(struct i2c_client *i2c,
 
 	pr_info("%s: VPS_TYPE=%d\n", __func__, pmuic->vps_table);
 
-	if (get_afc_mode() & CH_MODE_AFC_DISABLE_VAL) {
+	if (muic_get_afc_mode() & CH_MODE_AFC_DISABLE_VAL) {
 		pr_info("AFC mode disabled\n");
 		pmuic->pdata->afc_disable = true;
 	} else {

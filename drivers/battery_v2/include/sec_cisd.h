@@ -201,8 +201,8 @@ enum {
 	WC_DATA_MAX,
 };
 
-extern const char *cisd_data_str[];
-extern const char *cisd_data_str_d[];
+extern const char *sec_cisd_data_str[];
+extern const char *sec_cisd_data_str_d[];
 
 #define PAD_INDEX_STRING	"INDEX"
 #define PAD_INDEX_VALUE		1

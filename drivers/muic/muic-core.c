@@ -110,7 +110,7 @@ static int __init set_afc_mode(char *str)
 }
 early_param("charging_mode", set_afc_mode);
 
-int get_afc_mode(void)
+int muic_get_afc_mode(void)
 {
 	return afc_mode;
 }

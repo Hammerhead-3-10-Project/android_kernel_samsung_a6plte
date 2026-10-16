@@ -273,6 +273,28 @@
 	};
 };
 
+/*
+ * QUSB2 PHY as in the stock DT: its own init sequence and no tcsr_clamp_dig_n_1p8
+ * (0x193f020 belongs to the A02s TCSR layout; on this board 0x193f044 is the clock
+ * scheme select). A wrong PHY setup made the host fail with "device descriptor read/64,
+ * error -71".
+ */
+&qusb_phy {
+	reg = <0x079000 0x180>,
+		<0x01841030 0x4>;
+	reg-names = "qusb_phy_base", "ref_clk_addr";
+	qcom,qusb-phy-init-seq = <0xc0 0x80
+				0x43 0x84
+				0x81 0x88
+				0xc0 0x8c
+				0x30 0x08
+				0x79 0x0c
+				0x21 0x10
+				0x14 0x9c
+				0x9f 0x1c
+				0x00 0x18>;
+};
+
 /* On the Qualcomm MTP this always-on rail is enabled by GPIO 50; on the A6+ GPIO 50 is
  * the panel reset line (mdss_dsi0), so it must not be claimed here (gpio_request -EBUSY
  * made the DSI controller probe fail and left the display black). */

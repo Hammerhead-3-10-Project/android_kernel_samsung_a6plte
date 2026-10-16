@@ -106,8 +106,10 @@ static enum android_function_index name_to_func_idx(const char *name)
 		return ANDROID_ACCESSORY;
 	if (!strncasecmp("AUDIO_SOURCE", name, FUNC_NAME_LEN))
 		return ANDROID_AUDIO_SRC;
+#ifndef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	if (!strncasecmp("CHARGING", name, FUNC_NAME_LEN))
 		return ANDROID_CHARGER;
+#endif
 	if (!strncasecmp("MIDI", name, FUNC_NAME_LEN))
 		return ANDROID_MIDI;
 	if (!strncasecmp("RNDIS_GSI", name, FUNC_NAME_LEN))

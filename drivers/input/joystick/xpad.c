@@ -1455,6 +1455,8 @@ static int xpad_led_probe(struct usb_xpad *xpad)
 
 	xpad_identify_controller(xpad);
 
+	/* Light up the segment corresponding to controller number */
+	xpad_identify_controller(xpad);
 	return 0;
 
 err_free_id:
@@ -1478,6 +1480,7 @@ static void xpad_led_disconnect(struct usb_xpad *xpad)
 #else
 static int xpad_led_probe(struct usb_xpad *xpad) { return 0; }
 static void xpad_led_disconnect(struct usb_xpad *xpad) { }
+static void xpad_identify_controller(struct usb_xpad *xpad) { }
 #endif
 
 static int xpad_start_input(struct usb_xpad *xpad)

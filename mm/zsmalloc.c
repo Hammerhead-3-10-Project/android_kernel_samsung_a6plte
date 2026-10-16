@@ -203,6 +203,29 @@ struct zs_size_stat {
  */
 static int zs_size_classes;
 
+enum zs_stat_type {
+	OBJ_ALLOCATED,
+	OBJ_USED,
+	CLASS_ALMOST_FULL,
+	CLASS_ALMOST_EMPTY,
+	NR_ZS_STAT_TYPE,
+};
+
+#ifdef CONFIG_ZSMALLOC_STAT
+
+static struct dentry *zs_stat_root;
+
+struct zs_size_stat {
+	unsigned long objs[NR_ZS_STAT_TYPE];
+};
+
+#endif
+
+/*
+ * number of size_classes
+ */
+static int zs_size_classes;
+
 /*
  * We assign a page to ZS_ALMOST_EMPTY fullness group when:
  *	n <= N / f, where

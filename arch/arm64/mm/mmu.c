@@ -719,6 +719,46 @@ static int __init map_entry_trampoline(void)
 core_initcall(map_entry_trampoline);
 #endif
 
+void __init fixup_executable(void)
+{
+#ifdef CONFIG_DEBUG_RODATA
+	/* now that we are actually fully mapped, make the start/end more fine grained */
+	if (!IS_ALIGNED((unsigned long)_stext, SECTION_SIZE)) {
+		unsigned long aligned_start = round_down(__pa(_stext),
+							SECTION_SIZE);
+
+		create_mapping(aligned_start, __phys_to_virt(aligned_start),
+				__pa(_stext) - aligned_start,
+				PAGE_KERNEL);
+	}
+
+	if (!IS_ALIGNED((unsigned long)__init_end, SECTION_SIZE)) {
+		unsigned long aligned_end = round_up(__pa(__init_end),
+							SECTION_SIZE);
+		create_mapping(__pa(__init_end), (unsigned long)__init_end,
+				aligned_end - __pa(__init_end),
+				PAGE_KERNEL);
+	}
+#endif
+}
+
+#ifdef CONFIG_DEBUG_RODATA
+void mark_rodata_ro(void)
+{
+	create_mapping_late(__pa(_stext), (unsigned long)_stext,
+				(unsigned long)_etext - (unsigned long)_stext,
+				PAGE_KERNEL_EXEC | PTE_RDONLY);
+
+}
+#endif
+
+void fixup_init(void)
+{
+	create_mapping_late(__pa(__init_begin), (unsigned long)__init_begin,
+			(unsigned long)__init_end - (unsigned long)__init_begin,
+			PAGE_KERNEL);
+}
+
 /*
  * paging_init() sets up the page tables, initialises the zone memory
  * maps and sets up the zero page.

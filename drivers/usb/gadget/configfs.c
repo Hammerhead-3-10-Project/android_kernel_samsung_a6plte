@@ -1630,6 +1630,7 @@ static const struct usb_gadget_driver configfs_driver_template = {
 	.unbind         = configfs_composite_unbind,
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 	.setup          = android_setup,
+	.reset          = android_disconnect,
 	.disconnect     = android_disconnect,
 #else
 	.setup          = composite_setup,
@@ -1746,6 +1747,9 @@ static struct config_group *gadgets_make(
 
 	if (!gi->composite.gadget_driver.function)
 		goto err1;
+
+	if (android_device_create(gi) < 0)
+		goto err;
 
 #ifdef CONFIG_USB_OTG
 	gi->otg.bLength = sizeof(struct usb_otg_descriptor);

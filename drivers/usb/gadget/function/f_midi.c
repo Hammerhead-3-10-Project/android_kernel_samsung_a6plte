@@ -20,6 +20,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/device.h>
 
@@ -33,6 +34,7 @@
 #include <linux/usb/midi.h>
 
 #include "u_f.h"
+#include "u_midi.h"
 
 MODULE_AUTHOR("Ben Williamson");
 MODULE_LICENSE("GPL v2");
@@ -336,6 +338,10 @@ static int f_midi_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 	struct usb_composite_dev *cdev = f->config->cdev;
 	unsigned i;
 	int err;
+
+	/* For Control Device interface we do nothing */
+	if (intf == 0)
+		return 0;
 
 	err = f_midi_start_ep(midi, f, midi->in_ep);
 	if (err)
@@ -660,6 +666,14 @@ static struct snd_rawmidi_ops gmidi_out_ops = {
 	.trigger = f_midi_out_trigger
 };
 
+static inline void f_midi_unregister_card(struct f_midi *midi)
+{
+	if (midi->card) {
+		snd_card_free(midi->card);
+		midi->card = NULL;
+	}
+}
+
 /* register as a sound "card" */
 static int f_midi_register_card(struct f_midi *midi)
 {
@@ -721,10 +735,7 @@ static int f_midi_register_card(struct f_midi *midi)
 	return 0;
 
 fail:
-	if (midi->card) {
-		snd_card_free(midi->card);
-		midi->card = NULL;
-	}
+	f_midi_unregister_card(midi);
 	return err;
 }
 
@@ -743,13 +754,20 @@ f_midi_bind(struct usb_configuration *c, struct usb_function *f)
 	struct f_midi *midi = func_to_midi(f);
 	int status, n, jack = 1, i = 0, j = 0;
 
+	midi->gadget = cdev->gadget;
+	tasklet_init(&midi->tasklet, f_midi_in_tasklet, (unsigned long) midi);
+	status = f_midi_register_card(midi);
+	if (status < 0)
+		goto fail_register;
+
 	/* maybe allocate device-global string ID */
-	if (midi_string_defs[0].id == 0) {
-		status = usb_string_id(c->cdev);
-		if (status < 0)
-			goto fail;
-		midi_string_defs[0].id = status;
+	us = usb_gstrings_attach(c->cdev, midi_strings,
+				 ARRAY_SIZE(midi_string_defs));
+	if (IS_ERR(us)) {
+		status = PTR_ERR(us);
+		goto fail;
 	}
+	ac_interface_desc.iInterface = us[STRING_FUNC_IDX].id;
 
 	/* We have two interfaces, AudioControl and MIDIStreaming */
 	status = usb_interface_id(c, f);
@@ -942,6 +960,8 @@ fail_f_midi:
 	usb_free_descriptors(f->hs_descriptors);
 	kfree(midi_ss_function);
 fail:
+	f_midi_unregister_card(midi);
+fail_register:
 	/* we might as well release our claims on endpoints */
 	if (midi->out_ep)
 		midi->out_ep->driver_data = NULL;
@@ -972,8 +992,9 @@ int /* __init */ f_midi_bind_config(struct usb_configuration *c,
 			      unsigned int qlen,
 			      struct midi_alsa_config *config)
 {
-	struct f_midi *midi;
-	int status, i;
+	return container_of(to_config_group(item), struct f_midi_opts,
+			    func_inst.group);
+}
 
 	if (config) {
 		config->card = -1;
@@ -992,9 +1013,6 @@ int /* __init */ f_midi_bind_config(struct usb_configuration *c,
 		midi->in_port[i]->state = STATE_UNKNOWN;
 	}
 
-	midi->gadget = c->cdev->gadget;
-	tasklet_init(&midi->tasklet, f_midi_in_tasklet, (unsigned long) midi);
-
 	/* set up ALSA midi devices */
 	midi->id = kstrdup(id, GFP_KERNEL);
 	midi->index = index;
@@ -1005,13 +1023,21 @@ int /* __init */ f_midi_bind_config(struct usb_configuration *c,
 	status = f_midi_register_card(midi);
 	if (status < 0)
 		goto setup_fail;
+	}
+	midi->in_ports = opts->in_ports;
+	midi->out_ports = opts->out_ports;
+	midi->index = opts->index;
+	midi->buflen = opts->buflen;
+	midi->qlen = opts->qlen;
+	++opts->refcnt;
+	mutex_unlock(&opts->lock);
 
-	midi->func.name        = "gmidi function";
-	midi->func.strings     = midi_strings;
-	midi->func.bind        = f_midi_bind;
-	midi->func.unbind      = f_midi_unbind;
-	midi->func.set_alt     = f_midi_set_alt;
-	midi->func.disable     = f_midi_disable;
+	midi->func.name		= "gmidi function";
+	midi->func.bind		= f_midi_bind;
+	midi->func.unbind	= f_midi_unbind;
+	midi->func.set_alt	= f_midi_set_alt;
+	midi->func.disable	= f_midi_disable;
+	midi->func.free_func	= f_midi_free;
 
 	status = usb_add_function(c, &midi->func);
 	if (status)

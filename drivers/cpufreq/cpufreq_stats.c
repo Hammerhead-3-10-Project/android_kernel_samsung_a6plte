@@ -628,8 +628,20 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 			cpufreq_powerstats_create(cpu_num, table, count);
 	}
 
-	if (!per_cpu(all_cpufreq_stats, policy->cpu))
-		cpufreq_allstats_create(policy->cpu);
+	table = cpufreq_frequency_get_table(cpu);
+	if (!table)
+		return 0;
+
+	cpufreq_for_each_valid_entry(pos, table)
+		count++;
+
+	if (!per_cpu(all_cpufreq_stats, cpu))
+		cpufreq_allstats_create(cpu, table, count);
+
+	for_each_possible_cpu(cpu_num) {
+		if (!per_cpu(cpufreq_power_stats, cpu_num))
+			cpufreq_powerstats_create(cpu_num, table, count);
+	}
 
 	if (val == CPUFREQ_CREATE_POLICY)
 		ret = __cpufreq_stats_create_table(policy, table, count);

@@ -645,6 +645,10 @@ static const struct option_blacklist_info telit_me940_mbim_blacklist = {
 	.sendsetup = BIT(0),
 };
 
+static const struct option_blacklist_info telit_le910_s1_blacklist = {
+	.sendsetup = BIT(2),
+};
+
 static const struct option_blacklist_info telit_ft980_ks_blacklist = {
 	.sendsetup = BIT(2),
 	.reserved = BIT(3),

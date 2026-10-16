@@ -47,7 +47,7 @@
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "adreno."
 
-static bool nopreempt;
+static bool nopreempt = true;	/* a6plte bring-up: CP hangs on the preemption init packets with the stock firmware */
 module_param(nopreempt, bool, 0444);
 MODULE_PARM_DESC(nopreempt, "Disable GPU preemption");
 

@@ -106,7 +106,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 		pte_unmap(pte);
 	} while (0);
 
-	printk("\n");
+	pr_cont("\n");
 }
 
 static bool is_el1_instruction_abort(unsigned int esr)

@@ -451,6 +451,8 @@ int f2fs_commit_inmem_pages(struct inode *inode)
 	f2fs_lock_op(sbi);
 	set_inode_flag(inode, FI_ATOMIC_COMMIT);
 
+	set_inode_flag(inode, FI_ATOMIC_COMMIT);
+
 	mutex_lock(&fi->inmem_lock);
 	err = __f2fs_commit_inmem_pages(inode);
 
@@ -632,6 +634,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi, nid_t ino)
 	cmd.ino = ino;
 	init_completion(&cmd.wait);
 
+	atomic_inc(&fcc->issing_flush);
 	llist_add(&cmd.llnode, &fcc->issue_list);
 
 	/* update issue_list before we wake up issue_flush thread */
@@ -2115,6 +2118,30 @@ bool f2fs_is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr)
 	return is_cp;
 }
 
+bool is_checkpointed_data(struct f2fs_sb_info *sbi, block_t blkaddr)
+{
+	struct sit_info *sit_i = SIT_I(sbi);
+	unsigned int segno, offset;
+	struct seg_entry *se;
+	bool is_cp = false;
+
+	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
+		return true;
+
+	mutex_lock(&sit_i->sentry_lock);
+
+	segno = GET_SEGNO(sbi, blkaddr);
+	se = get_seg_entry(sbi, segno);
+	offset = GET_BLKOFF_FROM_SEG0(sbi, blkaddr);
+
+	if (f2fs_test_bit(offset, se->ckpt_valid_map))
+		is_cp = true;
+
+	mutex_unlock(&sit_i->sentry_lock);
+
+	return is_cp;
+}
+
 /*
  * This function should be resided under the curseg_mutex lock
  */
@@ -2171,6 +2198,19 @@ void f2fs_update_meta_page(struct f2fs_sb_info *sbi,
 	struct page *page = f2fs_grab_meta_page(sbi, blk_addr);
 
 	memcpy(page_address(page), src, PAGE_SIZE);
+	set_page_dirty(page);
+	f2fs_put_page(page, 1);
+}
+
+void update_meta_page(struct f2fs_sb_info *sbi, void *src, block_t blk_addr)
+{
+	struct page *page = grab_meta_page(sbi, blk_addr);
+	void *dst = page_address(page);
+
+	if (src)
+		memcpy(dst, src, PAGE_SIZE);
+	else
+		memset(dst, 0, PAGE_SIZE);
 	set_page_dirty(page);
 	f2fs_put_page(page, 1);
 }
@@ -2641,6 +2681,12 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
 		return -EIO;
 	}
 
+	if (is_sbi_flag_set(sbi, SBI_NEED_FSCK)) {
+		f2fs_msg(sbi->sb, KERN_WARNING,
+			"Found FS corruption, run fsck to fix.");
+		goto out;
+	}
+
 	/* start/end segment number in main_area */
 	start_segno = (start <= MAIN_BLKADDR(sbi)) ? 0 : GET_SEGNO(sbi, start);
 	end_segno = (end >= MAX_BLKADDR(sbi)) ? MAIN_SEGS(sbi) - 1 :
@@ -2907,8 +2953,8 @@ void f2fs_allocate_data_block(struct f2fs_sb_info *sbi, struct page *page,
 	stat_inc_block_count(sbi, curseg);
 
 	/*
-	 * SIT information should be updated before segment allocation,
-	 * since SSR needs latest valid block information.
+	 * SIT information should be updated after segment allocation,
+	 * since we need to keep dirty segments precisely under SSR.
 	 */
 	update_sit_entry(sbi, *new_blkaddr, 1);
 	if (GET_SEGNO(sbi, old_blkaddr) != NULL_SEGNO)
@@ -3611,6 +3657,9 @@ void f2fs_flush_sit_entries(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 	struct seg_entry *se;
 
 	down_write(&sit_i->sentry_lock);
+
+	if (!sit_i->dirty_sentries)
+		goto out;
 
 	if (!sit_i->dirty_sentries)
 		goto out;

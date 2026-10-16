@@ -633,6 +633,9 @@ enum {
 
 #define MAX_DIR_RA_PAGES	4	/* maximum ra pages of dir */
 
+/* vector size for gang look-up from extent cache that consists of radix tree */
+#define EXT_TREE_VEC_SIZE	64
+
 /* for in-memory extent cache entry */
 #define F2FS_MIN_EXTENT_LEN	64	/* minimum extent length */
 
@@ -706,6 +709,58 @@ enum {
 	F2FS_GET_BLOCK_PRE_AIO,
 	F2FS_GET_BLOCK_PRECACHE,
 };
+
+struct extent_node {
+	struct rb_node rb_node;
+	union {
+		struct {
+			unsigned int fofs;
+			unsigned int len;
+			u32 blk;
+		};
+		struct extent_info ei;	/* extent info */
+
+	};
+	struct list_head list;		/* node in global extent list of sbi */
+	struct extent_tree *et;		/* extent tree pointer */
+};
+
+struct extent_tree {
+	nid_t ino;			/* inode number */
+	struct rb_root root;		/* root of extent info rb-tree */
+	struct extent_node *cached_en;	/* recently accessed extent node */
+	struct extent_info largest;	/* largested extent info */
+	struct list_head list;		/* to be used by sbi->zombie_list */
+	rwlock_t lock;			/* protect extent info rb-tree */
+	atomic_t node_cnt;		/* # of extent node in rb-tree*/
+};
+
+/*
+ * This structure is taken from ext4_map_blocks.
+ *
+ * Note that, however, f2fs uses NEW and MAPPED flags for f2fs_map_blocks().
+ */
+#define F2FS_MAP_NEW		(1 << BH_New)
+#define F2FS_MAP_MAPPED		(1 << BH_Mapped)
+#define F2FS_MAP_UNWRITTEN	(1 << BH_Unwritten)
+#define F2FS_MAP_FLAGS		(F2FS_MAP_NEW | F2FS_MAP_MAPPED |\
+				F2FS_MAP_UNWRITTEN)
+
+struct f2fs_map_blocks {
+	block_t m_pblk;
+	block_t m_lblk;
+	unsigned int m_len;
+	unsigned int m_flags;
+	pgoff_t *m_next_pgofs;		/* point next possible non-hole pgofs */
+};
+
+/* for flag in get_data_block */
+#define F2FS_GET_BLOCK_READ		0
+#define F2FS_GET_BLOCK_DIO		1
+#define F2FS_GET_BLOCK_FIEMAP		2
+#define F2FS_GET_BLOCK_BMAP		3
+#define F2FS_GET_BLOCK_PRE_DIO		4
+#define F2FS_GET_BLOCK_PRE_AIO		5
 
 /*
  * i_advise uses FADVISE_XXX_BIT. We can add additional hints later.
@@ -1409,6 +1464,9 @@ struct f2fs_sb_info {
 
 	/* threshold for gc trials on pinned files */
 	u64 gc_pin_file_threshold;
+
+	/* threshold for converting bg victims for fg */
+	u64 fggc_threshold;
 
 	/* maximum # of trials to find a victim segment for SSR and GC */
 	unsigned int max_victim_search;
@@ -2263,6 +2321,24 @@ static inline struct bio *f2fs_bio_alloc(struct f2fs_sb_info *sbi,
 	}
 
 	return bio_alloc(GFP_KERNEL, npages);
+}
+
+static inline void f2fs_radix_tree_insert(struct radix_tree_root *root,
+				unsigned long index, void *item)
+{
+	while (radix_tree_insert(root, index, item))
+		cond_resched();
+}
+
+static inline struct bio *f2fs_bio_alloc(int npages)
+{
+	struct bio *bio;
+
+	/* No failure on bio allocation */
+	bio = bio_alloc(GFP_NOIO, npages);
+	if (!bio)
+		bio = bio_alloc(GFP_NOIO | __GFP_NOFAIL, npages);
+	return bio;
 }
 
 static inline void f2fs_radix_tree_insert(struct radix_tree_root *root,

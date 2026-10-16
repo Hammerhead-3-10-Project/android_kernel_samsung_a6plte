@@ -727,6 +727,10 @@ encryption_policy_out:
 		}
 
 		err = ext4_process_policy(&policy, inode);
+
+		mutex_unlock(&inode->i_mutex);
+
+		mnt_drop_write_file(filp);
 encryption_policy_out:
 		return err;
 #else

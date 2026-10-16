@@ -245,6 +245,7 @@ TRACE_EVENT(device_pm_callback_start,
 );
 
 TRACE_EVENT(device_pm_callback_start,
+
 	TP_PROTO(struct device *dev, const char *pm_ops, int event),
 
 	TP_ARGS(dev, pm_ops, event),

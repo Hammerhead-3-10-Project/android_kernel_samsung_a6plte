@@ -908,6 +908,8 @@ void mmc_remove_host(struct mmc_host *host)
 	sysfs_remove_group(&host->parent->kobj, &dev_attr_grp);
 	sysfs_remove_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
 
+	mmc_latency_hist_sysfs_exit(host);
+
 	device_del(&host->class_dev);
 
 	led_trigger_unregister_simple(host->led);

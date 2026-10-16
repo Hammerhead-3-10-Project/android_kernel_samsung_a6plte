@@ -7,6 +7,7 @@
  */
 
 #include "sdm450.dtsi"
+#include "dsi-panel-s6e3fa7-ams604nl01-fhd-cmd.dtsi"
 
 / {
 	/* Booted by the Samsung bootloader: it patches /memory and the cmdline. */
@@ -203,4 +204,104 @@
 			debounce-interval = <15>;
 		};
 	};
+};
+
+/* Power key (KPDPWR) and volume down (RESIN), reset combo as on stock */
+&spmi_bus {
+	qcom,pm8953@0 {
+		qcom,power-on@800 {
+			qcom,s3-debounce = <128>;
+
+			qcom,pon_1 {
+				qcom,disable-reset = <1>;
+			};
+
+			qcom,pon_2 {
+				qcom,disable-reset = <1>;
+				qcom,support-reset = <0>;
+			};
+
+			qcom,pon_3 {
+				qcom,pon-type = <3>;
+				qcom,support-reset = <1>;
+				qcom,pull-up = <1>;
+				qcom,s1-timer = <6720>;
+				qcom,s2-timer = <1000>;
+				qcom,s2-type = <1>;
+				qcom,use-bark;
+			};
+		};
+	};
+};
+
+/* USB: peripheral only for now (no extcon / charger driver yet) */
+&usb3 {
+	qcom,force-peripheral-mode;
+
+	dwc3@7000000 {
+		dr_mode = "peripheral";
+	};
+};
+
+/*
+ * Display: S6E3FA7 on DSI0. GPIO 50 is the panel reset, 35 and 93 the panel
+ * power enables (driven by the "active" pin state, as on stock).
+ */
+&mdss_dsi_active {
+	mux {
+		pins = "gpio50", "gpio35", "gpio93";
+	};
+
+	config {
+		pins = "gpio50", "gpio35", "gpio93";
+	};
+};
+
+&mdss_dsi_suspend {
+	mux {
+		pins = "gpio50", "gpio35", "gpio93";
+	};
+
+	config {
+		pins = "gpio50", "gpio35", "gpio93";
+	};
+};
+
+&mdss_mdp {
+	qcom,mdss-pref-prim-intf = "dsi";
+};
+
+&mdss_dsi {
+	hw-config = "single_dsi";
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&dsi_s6e3fa7_ams604nl01_fhd_cmd>;
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
+	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
+
+	qcom,platform-te-gpio = <&tlmm 24 0>;
+	qcom,platform-reset-gpio = <&tlmm 50 0>;
+	/delete-property/ qcom,platform-bklight-en-gpio;
+};
+
+&mdss_dsi1 {
+	status = "disabled";
+};
+
+/* Voltage ranges as on stock (SD card core, panel/vdd rails) */
+&pm8953_l11 {
+	regulator-min-microvolt = <2950000>;
+	regulator-max-microvolt = <3000000>;
+};
+
+&pm8953_l13 {
+	regulator-min-microvolt = <3075000>;
+	regulator-max-microvolt = <3300000>;
+};
+
+&pm8953_l17 {
+	regulator-min-microvolt = <2800000>;
+	regulator-max-microvolt = <2950000>;
 };

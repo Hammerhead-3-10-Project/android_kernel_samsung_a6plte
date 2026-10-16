@@ -3995,6 +3995,17 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 	device_create_file(&pdev->dev, &dev_attr_usb_compliance_mode);
 	device_create_file(&pdev->dev, &dev_attr_xhci_link_compliance);
 
+	/*
+	 * Boards without a USB extcon/charger driver yet: act as a peripheral
+	 * as soon as the controller is probed (same as writing "peripheral" to
+	 * the "mode" attribute).
+	 */
+	if (of_property_read_bool(node, "qcom,force-peripheral-mode")) {
+		mdwc->vbus_active = true;
+		mdwc->id_state = DWC3_ID_FLOAT;
+		dwc3_ext_event_notify(mdwc);
+	}
+
 	host_mode = usb_get_dr_mode(&mdwc->dwc3->dev) == USB_DR_MODE_HOST;
 	if (!dwc->is_drd && host_mode) {
 		dev_dbg(&pdev->dev, "DWC3 in host only mode\n");

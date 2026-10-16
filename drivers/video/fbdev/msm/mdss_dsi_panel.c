@@ -897,6 +897,9 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 		mdss_dsi_panel_bklt_pwm(ctrl_pdata, bl_level);
 		break;
 	case BL_DCS_CMD:
+		if (pdata->panel_info.samsung_bl &&
+		    !mdss_dsi_samsung_bl_set(ctrl_pdata, bl_level))
+			break;
 		if (!mdss_dsi_sync_wait_enable(ctrl_pdata)) {
 			mdss_dsi_panel_bklt_dcs(ctrl_pdata, bl_level);
 			break;
@@ -2864,6 +2867,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	/*HS70 code for HS70-132 by liufurong at 2019/10/10 start*/
 	rc = of_property_read_u32(np, "qcom,bklt-dcs-ctrl-mode", &tmp);
 	pinfo->bklt_dcs_ctrl_mode = (!rc ? tmp : CTRL_MODE_UNKNOWN);
+	pinfo->samsung_bl = of_property_read_bool(np, "qcom,samsung-brightness");
 	pr_info("pinfo->bklt_dcs_ctrl_mode = %d rc = %d\n",pinfo->bklt_dcs_ctrl_mode,rc);
 	/*HS70 code for HS70-132 by liufurong at 2019/10/10 end*/
 

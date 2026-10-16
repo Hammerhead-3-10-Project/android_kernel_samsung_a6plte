@@ -38,7 +38,7 @@ obj-$(CONFIG_DEBUG_FS) += mdss_debug_frc.o
 endif
 
 mdss-dsi-objs := mdss_dsi.o mdss_dsi_host.o mdss_dsi_cmd.o mdss_dsi_status.o
-mdss-dsi-objs += mdss_dsi_panel.o
+mdss-dsi-objs += mdss_dsi_panel.o mdss_dsi_samsung_bl.o
 mdss-dsi-objs += msm_mdss_io_8974.o
 mdss-dsi-objs += mdss_dsi_phy.o
 mdss-dsi-objs += mdss_dsi_phy_12nm.o
@@ -82,3 +82,4 @@ obj-$(CONFIG_FB_MSM_QPIC_ILI_QVGA_PANEL) += qpic_panel_ili_qvga.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
 obj-y += dsi_send_cmd.o
+obj-y += samsung_bl/

@@ -241,6 +241,7 @@ static void option_instat_callback(struct urb *urb);
 /* These Quectel products use Quectel's vendor ID */
 #define QUECTEL_PRODUCT_EC21			0x0121
 #define QUECTEL_PRODUCT_EC25			0x0125
+#define QUECTEL_PRODUCT_BG96			0x0296
 
 #define SIERRA_VENDOR_ID			0x1199
 
@@ -614,9 +615,19 @@ static const struct option_blacklist_info telit_ft980_ks_blacklist = {
 	.reserved = BIT(3),
 };
 
+static const struct option_blacklist_info telit_fn980_blacklist = {
+	.sendsetup = BIT(0),
+	.reserved = BIT(1),
+};
+
 static const struct option_blacklist_info telit_le910_blacklist = {
 	.sendsetup = BIT(0),
 	.reserved = BIT(1) | BIT(2),
+};
+
+static const struct option_blacklist_info telit_le910c_blacklist = {
+	.sendsetup = BIT(2),
+	.reserved = BIT(3),
 };
 
 static const struct option_blacklist_info telit_le920_blacklist = {

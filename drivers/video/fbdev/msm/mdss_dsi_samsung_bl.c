@@ -50,6 +50,7 @@ static struct {
 
 static char key_on[]  = { 0xf0, 0x5a, 0x5a };
 static char key_off[] = { 0xf0, 0xa5, 0xa5 };
+static char gamma_update[] = { 0xf7, 0x03 };	/* latch AID/ELVSS/gamma, as stock gamma_tx_cmds */
 
 static void ss_fill(struct dsi_cmd_desc *d, char dtype, char *payload, int len)
 {
@@ -190,7 +191,7 @@ static int ss_step(int level)
  */
 int mdss_dsi_samsung_bl_set(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 {
-	struct dsi_cmd_desc d[9];
+	struct dsi_cmd_desc d[10];
 	char aid[3], acl_b4[sizeof(ss_bl_acl_off_b4)], acl_55[sizeof(ss_bl_acl_off_55)];
 	char elvss[24], vint[3], irc[34], gamma[36];
 	int step, idx, n = 0, ret;
@@ -234,6 +235,7 @@ int mdss_dsi_samsung_bl_set(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 	ss_fill(&d[n++], 0x39, vint, sizeof(vint));
 	ss_fill(&d[n++], 0x39, irc, sizeof(irc));
 	ss_fill(&d[n++], 0x39, gamma, 34);
+	ss_fill(&d[n++], 0x39, gamma_update, sizeof(gamma_update));
 	ss_fill(&d[n++], 0x39, key_off, sizeof(key_off));
 
 	ret = ss_tx(ctrl, d, n);

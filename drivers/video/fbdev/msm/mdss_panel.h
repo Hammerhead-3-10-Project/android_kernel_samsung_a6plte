@@ -664,6 +664,7 @@ struct mdss_panel_info {
 
 	/*HS70 code for HS70-132 by liufurong at 2019/10/10 start*/
 	u32 bklt_dcs_ctrl_mode;
+	u32 samsung_elvss_otp;	/* factory B5h param 23, >0xff = read from the panel */
 	bool samsung_bl;	/* Samsung AID/ELVSS/gamma brightness (qcom,samsung-brightness) */
 	/*HS70 code for HS70-132 by liufurong at 2019/10/10 end*/
 

@@ -42,6 +42,7 @@ static struct {
 	struct mutex lock;
 	bool tried;
 	bool ready;
+	bool elvss_measured;
 	struct smartdim_conf *sd;
 	u8 elvss_otp;		/* B5h 23rd parameter */
 	u8 irc_otp[2];		/* B8h 1st, 2nd parameter */
@@ -114,10 +115,17 @@ static bool ss_mtp_valid(const u8 *b, int len)
 	return !all0 && !allff;
 }
 
-static int ss_init(struct mdss_dsi_ctrl_pdata *ctrl)
+/*
+ * B5h parameter 23 holds the ELVSS factory value only until something writes it
+ * (the bootloader and our on-command both do). A read taken right after the
+ * panel reset, before the on-command writes B5h, is reliable (@fresh); otherwise
+ * use the value given by the device tree.
+ */
+static int ss_init(struct mdss_dsi_ctrl_pdata *ctrl, bool fresh)
 {
 	struct dsi_cmd_desc d;
-	u8 b5[2], b8[2];
+	u8 b5[2] = { 0, 0 }, b8[2];
+	u32 dt_elvss = ctrl->panel_data.panel_info.samsung_elvss_otp;
 	int i, ret;
 
 	ss.sd = smart_get_conf_S6E3FA7_AMS604NL01();
@@ -132,7 +140,7 @@ static int ss_init(struct mdss_dsi_ctrl_pdata *ctrl)
 		return ret;
 
 	ret = ss_read(ctrl, 0xc8, 0, SS_BL_MTP_LEN, (u8 *)ss.sd->mtp_buffer);
-	if (!ret)
+	if (!ret && (fresh || dt_elvss > 0xff))
 		ret = ss_read(ctrl, 0xb5, 0x16, 2, b5);
 	if (!ret)
 		ret = ss_read(ctrl, 0xb8, 0, 2, b8);
@@ -149,7 +157,8 @@ static int ss_init(struct mdss_dsi_ctrl_pdata *ctrl)
 		return -EINVAL;
 	}
 
-	ss.elvss_otp = b5[0];
+	ss.elvss_otp = (fresh || dt_elvss > 0xff) ? b5[0] : dt_elvss;
+	ss.elvss_measured = fresh;
 	ss.irc_otp[0] = b8[0];
 	ss.irc_otp[1] = b8[1];
 
@@ -200,7 +209,7 @@ int mdss_dsi_samsung_bl_set(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 	mutex_lock(&ss.lock);
 	if (!ss.tried) {
 		ss.tried = true;
-		ss.ready = !ss_init(ctrl);
+		ss.ready = !ss_init(ctrl, false);
 	}
 	if (!ss.ready) {
 		mutex_unlock(&ss.lock);
@@ -270,13 +279,26 @@ int mdss_dsi_samsung_bl_split(struct dsi_panel_cmds *on)
 	return -1;
 }
 
-/* Read the factory calibration once, before the on-command overwrites it. */
+/* Read the factory calibration before the on-command overwrites it. */
 void mdss_dsi_samsung_bl_prepare(struct mdss_dsi_ctrl_pdata *ctrl)
 {
+	struct dsi_cmd_desc d;
+	u8 b5[2];
+
 	mutex_lock(&ss.lock);
 	if (!ss.tried) {
 		ss.tried = true;
-		ss.ready = !ss_init(ctrl);
+		ss.ready = !ss_init(ctrl, true);
+	} else if (ss.ready && !ss.elvss_measured) {
+		ss_fill(&d, 0x39, key_on, sizeof(key_on));
+		ss_tx(ctrl, &d, 1);
+		if (!ss_read(ctrl, 0xb5, 0x16, 2, b5)) {
+			ss.elvss_otp = b5[0];
+			ss.elvss_measured = true;
+			pr_info("ss_bl: ELVSS factory value measured after reset: 0x%02x\n", b5[0]);
+		}
+		ss_fill(&d, 0x39, key_off, sizeof(key_off));
+		ss_tx(ctrl, &d, 1);
 	}
 	mutex_unlock(&ss.lock);
 }

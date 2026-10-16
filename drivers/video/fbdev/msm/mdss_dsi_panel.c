@@ -2879,6 +2879,8 @@ static int mdss_panel_parse_dt(struct device_node *np,
 	rc = of_property_read_u32(np, "qcom,bklt-dcs-ctrl-mode", &tmp);
 	pinfo->bklt_dcs_ctrl_mode = (!rc ? tmp : CTRL_MODE_UNKNOWN);
 	pinfo->samsung_bl = of_property_read_bool(np, "qcom,samsung-brightness");
+	if (of_property_read_u32(np, "qcom,samsung-elvss-otp", &pinfo->samsung_elvss_otp))
+		pinfo->samsung_elvss_otp = 0x100;
 	pr_info("pinfo->bklt_dcs_ctrl_mode = %d rc = %d\n",pinfo->bklt_dcs_ctrl_mode,rc);
 	/*HS70 code for HS70-132 by liufurong at 2019/10/10 end*/
 

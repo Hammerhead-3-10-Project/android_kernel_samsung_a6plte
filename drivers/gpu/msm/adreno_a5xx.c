@@ -2232,6 +2232,10 @@ static int a5xx_microcode_load(struct adreno_device *adreno_dev)
 	 * Do not invoke to load zap shader if MMU does
 	 * not support secure mode.
 	 */
+	pr_info("a5xx_microcode_load: mmu.secured=%d zap_name=%s zap_loaded=%u\n",
+		device->mmu.secured, adreno_dev->gpucore->zap_name ?
+		adreno_dev->gpucore->zap_name : "(none)", adreno_dev->zap_loaded);
+
 	if (!device->mmu.secured)
 		return 0;
 
@@ -2274,6 +2278,8 @@ static int a5xx_microcode_load(struct adreno_device *adreno_dev)
 			} else
 				adreno_dev->zap_loaded = 1;
 		} while ((ret == -EAGAIN) && (zap_retry++ < ZAP_RETRY_MAX));
+		pr_info("a5xx_microcode_load: zap subsystem_get ret=%d loaded=%u\n",
+			ret, adreno_dev->zap_loaded);
 	}
 
 	return ret;

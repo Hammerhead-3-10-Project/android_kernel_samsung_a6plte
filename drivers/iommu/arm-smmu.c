@@ -1708,6 +1708,16 @@ static int arm_smmu_set_pt_format(struct arm_smmu_domain *smmu_domain,
 	    !arm_smmu_has_secure_vmid(smmu_domain) &&
 	    arm_smmu_is_static_cb(smmu)) {
 		ret = msm_tz_set_cb_format(smmu->sec_id, cfg->cbndx);
+		/*
+		 * a6plte: the stock TZ (SDM450, Samsung) does not implement
+		 * SMMU_CHANGE_PAGETABLE_FORMAT for the APPS SMMU (-ENOENT);
+		 * the 3.18 driver never asked for it. Keep the default format.
+		 */
+		if (ret) {
+			pr_warn_once("arm-smmu: TZ cb format change not supported (%d), continuing\n",
+				     ret);
+			ret = 0;
+		}
 	}
 	return ret;
 }

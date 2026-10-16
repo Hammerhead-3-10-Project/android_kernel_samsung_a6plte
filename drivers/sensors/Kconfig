@@ -22,3 +22,31 @@ source "drivers/sensors/sx9325/Kconfig"
 # HS50 code for HS50-41/SR-QL3095-01-127 by zhuqiang at 2020/08/19 start
 source "drivers/sensors/a96t349/Kconfig"
 # HS50 code for HS50-41/SR-QL3095-01-127 by zhuqiang at 2020/08/19 end
+
+config SENSORS_CM36658
+	depends on I2C
+	tristate "CM36658 proximity and light sensor"
+	default n
+	help
+	  Capella CM36658 proximity and light sensor (Samsung A6+).
+
+config SENSORS_YAS539
+	tristate "YAS539 geomagnetic sensor"
+	depends on I2C
+	default n
+	help
+	  Yamaha YAS539 geomagnetic sensor (Samsung A6+).
+
+config SENSORS_LSM6DSL
+	tristate "STMicroelectronics LSM6DSL accelerometer and gyroscope"
+	depends on I2C && SYSFS
+	default n
+	help
+	  STMicroelectronics LSM6DSL sensor core (Samsung A6+).
+
+config SENSORS_LSM6DSL_I2C
+	tristate "STMicroelectronics LSM6DSL I2C glue"
+	depends on I2C && SYSFS
+	default n
+	help
+	  I2C bus support for the LSM6DSL driver.

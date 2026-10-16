@@ -538,3 +538,4 @@
 		sound-dai = <&tfa98xx 0>;
 	};
 };
+#include "sdm450-sec-a6plte-sensors.dtsi"

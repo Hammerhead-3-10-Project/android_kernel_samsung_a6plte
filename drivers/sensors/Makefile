@@ -11,3 +11,8 @@ obj-$(CONFIG_SENSORS_SX9325) += sx9325/
 # HS50 code for HS50-41/SR-QL3095-01-127 by zhuqiang at 2020/08/19 start
 obj-$(CONFIG_SENSORS_A96T349) += a96t349/
 # HS50 code for HS50-41/SR-QL3095-01-127 by zhuqiang at 2020/08/19 end
+
+obj-$(CONFIG_SENSORS_CM36658)	+= cm36658.o
+obj-$(CONFIG_SENSORS_YAS539)	+= yas_mag_drv-yas539.o yas_mag_kernel.o
+obj-$(CONFIG_SENSORS_LSM6DSL)	+= lsm6dsl_core.o
+obj-$(CONFIG_SENSORS_LSM6DSL_I2C)	+= lsm6dsl_i2c.o

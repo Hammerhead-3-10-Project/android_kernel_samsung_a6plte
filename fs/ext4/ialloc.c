@@ -1276,6 +1276,7 @@ int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
 	handle_t *handle;
 	ext4_fsblk_t blk;
 	int num, ret = 0, used_blks = 0;
+	unsigned long used_inos = 0;
 
 	/* This should not happen, but just to be sure check this */
 	if (sb->s_flags & MS_RDONLY) {
@@ -1306,10 +1307,10 @@ int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
 	 * used inodes so we need to skip blocks with used inodes in
 	 * inode table.
 	 */
-	if (!(gdp->bg_flags & cpu_to_le16(EXT4_BG_INODE_UNINIT)))
-		used_blks = DIV_ROUND_UP((EXT4_INODES_PER_GROUP(sb) -
-			    ext4_itable_unused_count(sb, gdp)),
-			    sbi->s_inodes_per_block);
+	if (!(gdp->bg_flags & cpu_to_le16(EXT4_BG_INODE_UNINIT))) {
+		used_inos = EXT4_INODES_PER_GROUP(sb) -
+			    ext4_itable_unused_count(sb, gdp);
+		used_blks = DIV_ROUND_UP(used_inos, sbi->s_inodes_per_block);
 
 	if ((used_blks < 0) || (used_blks > sbi->s_itb_per_group) ||
 	    ((group == 0) && ((EXT4_INODES_PER_GROUP(sb) -

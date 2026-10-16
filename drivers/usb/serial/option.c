@@ -632,6 +632,10 @@ static const struct option_blacklist_info telit_me910_dual_modem_blacklist = {
 	.reserved = BIT(3),
 };
 
+static const struct option_blacklist_info telit_me910_ecm_blacklist = {
+	.sendsetup = BIT(0),
+};
+
 static const struct option_blacklist_info telit_me940_qmi_blacklist = {
 	.sendsetup = BIT(0),
 	.reserved = BIT(1),
@@ -1174,7 +1178,8 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
-	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000), /* SIMCom SIM5218 */
+	  .driver_info = (kernel_ulong_t)&simcom_sim5218_blacklist },
 	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x68c0, 0xff),
 	  .driver_info = (kernel_ulong_t)&sierra_mc73xx_blacklist }, /* MC73xx */
 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
@@ -1226,6 +1231,8 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_ME910_DUAL_MODEM),
 		.driver_info = (kernel_ulong_t)&telit_me910_dual_modem_blacklist },
+	{ USB_DEVICE_INTERFACE_CLASS(TELIT_VENDOR_ID, 0x1102, 0xff),	/* Telit ME910 (ECM) */
+	  .driver_info = (kernel_ulong_t)&telit_me910_ecm_blacklist },
 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE910),
 		.driver_info = (kernel_ulong_t)&telit_le910_blacklist },
 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),

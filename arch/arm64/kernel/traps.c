@@ -292,6 +292,9 @@ void die(const char *str, struct pt_regs *regs, int err)
 	enum bug_trap_type bug_type = BUG_TRAP_TYPE_NONE;
 	unsigned long flags = oops_begin();
 	int ret;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&die_lock, flags);
 
 	if (!user_mode(regs))
 		bug_type = report_bug(regs->pc, regs);

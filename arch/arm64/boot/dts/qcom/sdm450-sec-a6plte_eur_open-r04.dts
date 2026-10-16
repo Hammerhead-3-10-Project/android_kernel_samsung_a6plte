@@ -1,0 +1,9 @@
+/dts-v1/;
+
+#include "sdm450-sec-a6plte.dtsi"
+
+/ {
+	model = "Samsung A6-Plus LTE EUR OPEN Rev04";
+	compatible = "qcom,sdm450-mtp", "qcom,sdm450", "qcom,mtp";
+	qcom,board-id = <8 4>;
+};

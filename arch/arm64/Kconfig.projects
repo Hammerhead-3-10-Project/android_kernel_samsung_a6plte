@@ -264,3 +264,16 @@ config MACH_A02Q_USA_TFN
 	help
 	  Support for Samsung HS50 A02Q USA TFM device.
 	  	  
+config SEC_A6PLTE_PROJECT
+	depends on ARCH_SDM450
+	default n
+	bool "Samsung A6PLTE Project"
+	help
+	  Support for Samsung Galaxy A6+ (SM-A605, SDM450).
+
+config MACH_A6PLTE_EUR_OPEN
+	depends on SEC_A6PLTE_PROJECT
+	default n
+	bool "Samsung A6PLTE EUR OPEN"
+	help
+	  Support for Samsung Galaxy A6+ EUR OPEN (SM-A605FN).

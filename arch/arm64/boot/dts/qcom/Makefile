@@ -617,6 +617,8 @@ dtb-$(CONFIG_ARCH_MSM8909) += msm8909-pm8916-mtp.dtb \
 	msm8909-mtp.dtb \
 	msm8909-1gb-mtp.dtb
 
+dtb-$(CONFIG_MACH_A6PLTE_EUR_OPEN) += sdm450-sec-a6plte_eur_open-r04.dtb
+
 dtb-$(CONFIG_ARCH_SDM450) += sdm450-rcm.dtb \
 	sdm450-cdp.dtb \
 	sdm450-mtp.dtb \

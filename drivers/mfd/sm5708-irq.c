@@ -173,12 +173,17 @@ static int sm5708_read_irq_status(struct sm5708_dev *sm5708)
 	return 0;
 }
 
+static int sm5708_mask_all_irqs(struct sm5708_dev *sm5708);
+
 static irqreturn_t sm5708_irq_thread(int irq, void *data)
 {
 	struct sm5708_dev *sm5708 = data;
 	int i, ret;
 
-	pr_info("%s: irq gpio pre-state(0x%02x)\n", __func__, gpio_get_value(sm5708->irq_gpio));
+	static int empty_events;
+	static int empty_logged;
+
+	pr_debug("%s: irq gpio pre-state(0x%02x)\n", __func__, gpio_get_value(sm5708->irq_gpio));
 
 	ret = sm5708_read_irq_status(sm5708);
 	if (ret < 0) {
@@ -189,6 +194,24 @@ static irqreturn_t sm5708_irq_thread(int irq, void *data)
 	/* Apply masking */
 	for (i = 0; i < SM5708_IRQ_OFFSET_NR; i++)
 		sm5708->irq_status[i] &= ~sm5708->irq_masks_cur[i];
+
+	/*
+	 * Bring-up guard: with every source masked in software the level-low
+	 * line can stay asserted by an unmasked chip source and storm the CPU.
+	 * After many events nobody wanted, mask everything in the chip too.
+	 */
+	for (i = 0, ret = 0; i < SM5708_IRQ_OFFSET_NR; i++)
+		ret |= sm5708->irq_status[i];
+	if (ret) {
+		empty_events = 0;
+	} else if (++empty_events >= 50) {
+		if (!empty_logged++)
+			pr_err("%s: irq storm without a handled source, masking the chip (st=%02x %02x %02x %02x)\n",
+				__func__, sm5708->irq_status[0], sm5708->irq_status[1],
+				sm5708->irq_status[2], sm5708->irq_status[3]);
+		sm5708_mask_all_irqs(sm5708);
+		empty_events = 0;
+	}
 
 	/* Report */
 	for (i = 0; i < SM5708_MAX_IRQ; i++) {

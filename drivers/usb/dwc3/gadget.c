@@ -47,6 +47,14 @@ static int dwc3_gadget_wakeup_int(struct dwc3 *dwc);
 static void dwc3_stop_active_transfers(struct dwc3 *dwc);
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 static void dwc3_disconnect_gadget(struct dwc3 *dwc);
+/* Boards without a VBUS detector driver force the controller to peripheral. */
+static bool dwc3_vbus_is_active(struct dwc3 *dwc)
+{
+	return dwc->vbus_active ||
+		of_property_read_bool(dwc->dev->parent->of_node,
+				      "qcom,force-peripheral-mode");
+}
+
 static void dwc3_gadget_cable_connect(struct dwc3 *dwc, bool connect)
 {
 	static bool last_connect;
@@ -2121,7 +2129,7 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 	dwc->softconnect = is_on;
 	dev_err(dwc->dev, "dbg: pullup(%d) vbus_active=%d gadget_driver=%p\n",
 		 is_on, dwc->vbus_active, dwc->gadget_driver);
-	if ((dwc->is_drd && !dwc->vbus_active) || !dwc->gadget_driver) {
+	if ((dwc->is_drd && !dwc3_vbus_is_active(dwc)) || !dwc->gadget_driver) {
 		/*
 		 * Need to wait for vbus_session(on) from otg driver or to
 		 * the udc_start.
@@ -2263,6 +2271,9 @@ static int dwc3_gadget_vbus_session(struct usb_gadget *_gadget, int is_active)
 	}
 #endif
 
+	pr_err("dwc3 dbg: vbus_session(%d), vbus_active was %d\n", is_active, dwc->vbus_active);
+	if (!is_active)
+		dump_stack();
 	/* Mark that the vbus was powered */
 	dwc->vbus_active = is_active;
 
@@ -3783,7 +3794,7 @@ static void dwc3_process_event_entry(struct dwc3 *dwc,
 {
 	trace_dwc3_event(event->raw);
 	/* skip event processing in absence of vbus */
-	if (!dwc->vbus_active) {
+	if (!dwc3_vbus_is_active(dwc)) {
 		dbg_event(0xFF, "SKIP_EVT", event->raw);
 		pr_err_ratelimited("dwc3 dbg: event %08x skipped, vbus_active=0\n",
 				    event->raw);

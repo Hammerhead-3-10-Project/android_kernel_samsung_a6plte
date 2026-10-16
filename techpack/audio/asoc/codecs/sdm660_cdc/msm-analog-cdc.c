@@ -3078,7 +3078,7 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"ADC2 MUX", "INP3", "ADC2_INP3"},
 
 	{"ADC1", NULL, "ADC1_INP1"},
-	{"ADC1_INP1", "Switch", "AMIC1"},
+	{"ADC1_INP1", NULL, "AMIC1"}, /* the Samsung mixer paths never set the ADC1_INP1 switch */
 	{"ADC2_INP2", NULL, "AMIC2"},
 	{"ADC2_INP3", NULL, "AMIC3"},
 
@@ -3161,7 +3161,7 @@ static const struct snd_soc_dapm_route audio_map_hph[] = {
 	{"ADC2 MUX", "INP3", "ADC2_INP3"},
 
 	{"ADC1", NULL, "ADC1_INP1"},
-	{"ADC1_INP1", "Switch", "AMIC1"},
+	{"ADC1_INP1", NULL, "AMIC1"}, /* the Samsung mixer paths never set the ADC1_INP1 switch */
 	{"ADC2_INP2", NULL, "AMIC2"},
 	{"ADC2_INP3", NULL, "AMIC3"},
 

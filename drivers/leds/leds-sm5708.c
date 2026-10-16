@@ -79,7 +79,8 @@ FlashlightLevelInfo calibData[MAX_FLASHLIGHT_LEVEL] = {
 
 
 /*sys/class/camera*/
-extern struct class *camera_class;
+/* Normally created by the Samsung camera driver; NULL (checked below) until that is ported. */
+struct class *camera_class __weak;
 bool assistive_light[2] = {false, false};
 bool factory_flash_test[2] = { false, false };
 

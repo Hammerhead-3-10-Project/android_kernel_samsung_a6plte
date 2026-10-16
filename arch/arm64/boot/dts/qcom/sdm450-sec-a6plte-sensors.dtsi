@@ -117,3 +117,61 @@
 		};
 	};
 };
+
+// PCAL6416A GPIO expander (stock i2c@... on gpio 21/20). Its init drives
+// pin 6 (gpio 306) high; the sensors do not ACK without it.
+&tlmm {
+	i2c_20_active: i2c_20_active {
+		mux {
+			pins = "gpio20", "gpio21";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio20", "gpio21";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	expander_reset_active: expander_reset_active {
+		mux {
+			pins = "gpio33";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio33";
+			drive-strength = <2>;
+			bias-disable;
+			output-high;
+		};
+	};
+};
+
+/ {
+	i2c_expander: i2c@20 {
+		cell-index = <20>;
+		compatible = "i2c-gpio";
+		gpios = <&tlmm 21 0 &tlmm 20 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c_20_active>;
+
+		pcal6416a@20 {
+			compatible = "pcal6416a,gpio-expander";
+			gpio-controller;
+			#gpio-cells = <2>;
+			reg = <0x20>;
+			pinctrl-names = "expander_reset_setting";
+			pinctrl-0 = <&expander_reset_active>;
+			pcal6416a,gpio_start = <300>;
+			pcal6416a,ngpio = <16>;
+			pcal6416a,reset-gpio = <&tlmm 33 0>;
+			pcal6416a,vdd-supply = <&pm8953_l5>;
+			pcal6416a,support_initialize = <1>;
+			pcal6416a,config = <0xf89f>;
+			pcal6416a,data_out = <0x40>;
+			pcal6416a,pull_reg = <0x100400>;
+		};
+	};
+};

@@ -743,6 +743,12 @@ config GPIO_MC9S08DZ60
 	help
 	  Select this to enable the MC9S08DZ60 GPIO driver
 
+config GPIO_PCAL6416A
+	bool "PCAL6416A GPIO expander"
+	depends on I2C
+	help
+	  GPIO driver for PCAL6416A I2C-based GPIO expander.
+
 config GPIO_PCA953X
 	tristate "PCA95[357]x, PCA9698, TCA64xx, and MAX7310 I/O ports"
 	help

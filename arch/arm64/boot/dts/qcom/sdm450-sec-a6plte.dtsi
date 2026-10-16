@@ -273,6 +273,14 @@
 	};
 };
 
+/* On the Qualcomm MTP this always-on rail is enabled by GPIO 50; on the A6+ GPIO 50 is
+ * the panel reset line (mdss_dsi0), so it must not be claimed here (gpio_request -EBUSY
+ * made the DSI controller probe fail and left the display black). */
+&eldo2_8953 {
+	/delete-property/ gpio;
+	/delete-property/ enable-active-high;
+};
+
 /*
  * Display: S6E3FA7 on DSI0. GPIO 50 is the panel reset, 35 and 93 the panel
  * power enables (driven by the "active" pin state, as on stock).

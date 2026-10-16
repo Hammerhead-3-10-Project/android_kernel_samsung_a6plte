@@ -117,15 +117,3 @@
 		};
 	};
 };
-
-// EXPERIMENT: the sensor buses read low and nothing ACKs, so the rail that
-// powers the sensors is probably one of the PMIC LDOs nobody requests (the
-// stock kernel leaves them as the bootloader set them). Keep them all on and
-// bisect once the sensors answer.
-&pm8953_l6 { regulator-always-on; };
-&pm8953_l9 { regulator-always-on; };
-&pm8953_l10 { regulator-always-on; };
-&pm8953_l12 { regulator-always-on; };
-&pm8953_l16 { regulator-always-on; };
-&pm8953_l17 { regulator-always-on; };
-&pm8953_l22 { regulator-always-on; };

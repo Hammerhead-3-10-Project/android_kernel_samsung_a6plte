@@ -583,6 +583,7 @@ static struct arm_smmu_option_prop arm_smmu_options[] = {
 	{ ARM_SMMU_OPT_MMU500_ERRATA1, "qcom,mmu500-errata-1" },
 	{ ARM_SMMU_OPT_STATIC_CB, "qcom,enable-static-cb"},
 	{ ARM_SMMU_OPT_HALT, "qcom,enable-smmu-halt"},
+	{ ARM_SMMU_OPT_FORCE_AARCH32, "qcom,force-aarch32-format"},
 	{ 0, NULL},
 };
 
@@ -1708,16 +1709,6 @@ static int arm_smmu_set_pt_format(struct arm_smmu_domain *smmu_domain,
 	    !arm_smmu_has_secure_vmid(smmu_domain) &&
 	    arm_smmu_is_static_cb(smmu)) {
 		ret = msm_tz_set_cb_format(smmu->sec_id, cfg->cbndx);
-		/*
-		 * a6plte: the stock TZ (SDM450, Samsung) does not implement
-		 * SMMU_CHANGE_PAGETABLE_FORMAT for the APPS SMMU (-ENOENT);
-		 * the 3.18 driver never asked for it. Keep the default format.
-		 */
-		if (ret) {
-			pr_warn_once("arm-smmu: TZ cb format change not supported (%d), continuing\n",
-				     ret);
-			ret = 0;
-		}
 	}
 	return ret;
 }
@@ -1997,7 +1988,15 @@ static int arm_smmu_init_domain_context(struct iommu_domain *domain,
 	    (smmu->features & ARM_SMMU_FEAT_FMT_AARCH32_S) &&
 	    (smmu_domain->stage == ARM_SMMU_DOMAIN_S1))
 		cfg->fmt = ARM_SMMU_CTX_FMT_AARCH32_S;
+	/*
+	 * a6plte: the stock Samsung TZ configures the APPS context banks as
+	 * AArch32 (the 3.18 msm_iommu driver used 32-bit tables) and does not
+	 * implement SMMU_CHANGE_PAGETABLE_FORMAT, so keep the 32-bit LPAE
+	 * format there instead of switching to AArch64.
+	 */
 	if ((IS_ENABLED(CONFIG_64BIT) || cfg->fmt == ARM_SMMU_CTX_FMT_NONE) &&
+	    !((smmu->options & ARM_SMMU_OPT_FORCE_AARCH32) &&
+	      cfg->fmt == ARM_SMMU_CTX_FMT_AARCH32_L) &&
 	    (smmu->features & (ARM_SMMU_FEAT_FMT_AARCH64_64K |
 			       ARM_SMMU_FEAT_FMT_AARCH64_16K |
 			       ARM_SMMU_FEAT_FMT_AARCH64_4K)))

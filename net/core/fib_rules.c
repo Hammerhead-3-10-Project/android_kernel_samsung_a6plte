@@ -36,8 +36,6 @@ int fib_default_rule_add(struct fib_rules_ops *ops,
 	r->pref = pref;
 	r->table = table;
 	r->flags = flags;
-	r->uid_start = INVALID_UID;
-	r->uid_end = INVALID_UID;
 	r->fr_net = hold_net(ops->fro_net);
 	r->uid_range = fib_kuid_range_unset;
 

@@ -78,7 +78,6 @@
 #include <net/dst.h>
 #include <net/checksum.h>
 #include <linux/net_tstamp.h>
-#include <net/tcp_states.h>
 
 /* START_OF_KNOX_NPA */
 #define NAP_PROCESS_NAME_LEN	128

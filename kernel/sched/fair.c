@@ -4346,6 +4346,10 @@ static inline int update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
 	cfs_rq->load_last_update_time_copy = sa->last_update_time;
 #endif
 
+	/* Trace CPU load, unless cfs_rq belongs to a non-root task_group */
+	if (cfs_rq == &rq_of(cfs_rq)->cfs)
+		trace_sched_load_avg_cpu(cpu_of(rq_of(cfs_rq)), cfs_rq);
+
 	return decayed || removed;
 }
 
@@ -6693,7 +6697,7 @@ long group_norm_util(struct energy_env *eenv, struct sched_group *sg)
 }
 
 static int find_new_capacity(struct energy_env *eenv,
-	const struct sched_group_energy const *sge)
+	const struct sched_group_energy * const sge)
 {
 	int idx;
 	unsigned long util = group_max_util(eenv);

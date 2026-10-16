@@ -1821,7 +1821,12 @@ static unsigned int _get_protection_flags(struct kgsl_memdesc *memdesc)
 	if (memdesc->flags & KGSL_MEMFLAGS_GPUREADONLY)
 		flags &= ~IOMMU_WRITE;
 
-	if (memdesc->priv & KGSL_MEMDESC_PRIVILEGED)
+	/*
+	 * BRING-UP TEST (a6plte): the CP/GPU faults with "write permission
+	 * fault" on the privileged scratch page (rptr shadow). Map everything
+	 * as unprivileged to check whether the GPU masters are not privileged.
+	 */
+	if (0 && (memdesc->priv & KGSL_MEMDESC_PRIVILEGED))
 		flags |= IOMMU_PRIV;
 
 	if (memdesc->flags & KGSL_MEMFLAGS_IOCOHERENT)

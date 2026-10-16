@@ -21,6 +21,7 @@
 #include <linux/irq.h>
 #include <linux/interrupt.h>
 #include <linux/gpio.h>
+#include <linux/workqueue.h>
 #include <linux/mfd/sm5708/sm5708.h>
 /* #include <plat/gpio-cfg.h> */
 
@@ -173,17 +174,13 @@ static int sm5708_read_irq_status(struct sm5708_dev *sm5708)
 	return 0;
 }
 
-static int sm5708_mask_all_irqs(struct sm5708_dev *sm5708);
-
-static irqreturn_t sm5708_irq_thread(int irq, void *data)
+/*
+ * Handle one round of status registers. Returns the OR of the raw status
+ * bytes (0 when the chip had nothing to report), or a negative errno.
+ */
+static int sm5708_irq_handle(struct sm5708_dev *sm5708)
 {
-	struct sm5708_dev *sm5708 = data;
-	int i, ret;
-
-	static int empty_events;
-	static int empty_logged;
-
-	pr_debug("%s: irq gpio pre-state(0x%02x)\n", __func__, gpio_get_value(sm5708->irq_gpio));
+	int i, ret, any = 0;
 
 	ret = sm5708_read_irq_status(sm5708);
 	if (ret < 0) {
@@ -191,32 +188,58 @@ static irqreturn_t sm5708_irq_thread(int irq, void *data)
 		return ret;
 	}
 
+	for (i = 0; i < SM5708_IRQ_OFFSET_NR; i++)
+		any |= sm5708->irq_status[i];
+
 	/* Apply masking */
 	for (i = 0; i < SM5708_IRQ_OFFSET_NR; i++)
 		sm5708->irq_status[i] &= ~sm5708->irq_masks_cur[i];
-
-	/*
-	 * Bring-up guard: with every source masked in software the level-low
-	 * line can stay asserted by an unmasked chip source and storm the CPU.
-	 * After many events nobody wanted, mask everything in the chip too.
-	 */
-	for (i = 0, ret = 0; i < SM5708_IRQ_OFFSET_NR; i++)
-		ret |= sm5708->irq_status[i];
-	if (ret) {
-		empty_events = 0;
-	} else if (++empty_events >= 50) {
-		if (!empty_logged++)
-			pr_err("%s: irq storm without a handled source, masking the chip (st=%02x %02x %02x %02x)\n",
-				__func__, sm5708->irq_status[0], sm5708->irq_status[1],
-				sm5708->irq_status[2], sm5708->irq_status[3]);
-		sm5708_mask_all_irqs(sm5708);
-		empty_events = 0;
-	}
 
 	/* Report */
 	for (i = 0; i < SM5708_MAX_IRQ; i++) {
 		if (sm5708->irq_status[sm5708_irqs[i].offset] & sm5708_irqs[i].mask)
 			handle_nested_irq(sm5708->irq_base + i);
+	}
+
+	return any;
+}
+
+/*
+ * Bring-up fallback: on the 4.9 kernel the level-low line stays asserted with
+ * every status register empty, and the RT irq thread then starves CPU0. After
+ * a burst of empty events the hardware irq is switched off and the status
+ * registers are polled instead (events are still delivered, ~4 Hz).
+ */
+static struct sm5708_dev *sm5708_poll_dev;
+static void sm5708_poll_fn(struct work_struct *work);
+static DECLARE_DELAYED_WORK(sm5708_poll_work, sm5708_poll_fn);
+
+static void sm5708_poll_fn(struct work_struct *work)
+{
+	if (!sm5708_poll_dev)
+		return;
+	sm5708_irq_handle(sm5708_poll_dev);
+	schedule_delayed_work(&sm5708_poll_work, msecs_to_jiffies(250));
+}
+
+static irqreturn_t sm5708_irq_thread(int irq, void *data)
+{
+	struct sm5708_dev *sm5708 = data;
+	static int empty_events;
+	int ret;
+
+	ret = sm5708_irq_handle(sm5708);
+	if (ret < 0)
+		return IRQ_HANDLED;
+
+	if (ret) {
+		empty_events = 0;
+	} else if (++empty_events >= 50) {
+		pr_err("%s: irq line stuck low with no status, switching to polling (gpio=%d)\n",
+			__func__, gpio_get_value(sm5708->irq_gpio));
+		sm5708_poll_dev = sm5708;
+		disable_irq_nosync(irq);
+		schedule_delayed_work(&sm5708_poll_work, msecs_to_jiffies(250));
 	}
 
 	return IRQ_HANDLED;

@@ -95,6 +95,18 @@
 		reg = <0x0 0x85000000 0x0 0x800000>;
 	};
 
+	/* The Samsung aboot looks this node up by name and deletes it (as it does with
+	 * lk_region@0 and sec_debug_region@0); keep it, as in the stock DT. */
+	sec_debug_low_mem: sec_debug_low_region@0 {
+		compatible = "removed-dma-pool";
+		no-map;
+		reg = <0x0 0x85000000 0x0 0x400000>;
+	};
+
+	camera_mem_region {
+		reg = <0x0 0xc0000000 0x0 0x200000>;
+	};
+
 	tima_mem: tima_region@0x85B00000 {
 		compatible = "removed-dma-pool";
 		no-map;
@@ -127,6 +139,7 @@
 	};
 
 	modem_shared_mem: modem_shared_mem_region@0x93000000 {
+		compatible = "removed-dma-pool";
 		no-map;
 		reg = <0x0 0x93000000 0x0 0x6000000>;
 	};
@@ -190,6 +203,23 @@
 
 /* Volume up (volume down / power are on the PMIC PON block) */
 &soc {
+	/* The Samsung aboot reads qcom,client_4/qcom,peripheral-size (the modem shared
+	 * memory) from here and fails hard when the node is missing. Same as stock. */
+	qcom,memshare {
+		qcom,client_3 {
+			/delete-property/ qcom,allocate-boot-time;
+		};
+
+		qcom,client_4 {
+			compatible = "qcom,memshare-peripheral";
+			memory-region = <&modem_shared_mem>;
+			qcom,peripheral-size = <0x6000000>;
+			qcom,client-id = <3>;
+			qcom,allocate-boot-time;
+			label = "modem";
+		};
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		input-name = "gpio-keys";

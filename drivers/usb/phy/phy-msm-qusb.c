@@ -946,7 +946,7 @@ static void qusb_phy_dbg_work(struct work_struct *w)
 		 readb_relaxed(qphy->base + QUSB2PHY_PLL_STATUS));
 }
 
-static int qusb_phy_probe(struct platform_device *pdev)
+static int __qusb_phy_probe(struct platform_device *pdev)
 {
 	struct qusb_phy *qphy;
 	struct device *dev = &pdev->dev;
@@ -1285,6 +1285,35 @@ static const struct of_device_id qusb_phy_id_table[] = {
 	{ },
 };
 MODULE_DEVICE_TABLE(of, qusb_phy_id_table);
+
+/* Bring-up: remember how every probe attempt ended and report it late */
+static int qusb_probe_rc = 12345;
+static int qusb_probe_calls;
+static struct delayed_work qusb_probe_dbg;
+
+static void qusb_probe_dbg_fn(struct work_struct *w)
+{
+	pr_info("qusb-dbg: probe calls=%d last rc=%d (12345 = never probed)\n",
+		qusb_probe_calls, qusb_probe_rc);
+}
+
+static int qusb_phy_probe(struct platform_device *pdev)
+{
+	int ret = __qusb_phy_probe(pdev);
+
+	qusb_probe_calls++;
+	qusb_probe_rc = ret;
+	dev_info(&pdev->dev, "probe returned %d\n", ret);
+	return ret;
+}
+
+static int __init qusb_probe_dbg_init(void)
+{
+	INIT_DELAYED_WORK(&qusb_probe_dbg, qusb_probe_dbg_fn);
+	schedule_delayed_work(&qusb_probe_dbg, 25 * HZ);
+	return 0;
+}
+late_initcall(qusb_probe_dbg_init);
 
 static struct platform_driver qusb_phy_driver = {
 	.probe		= qusb_phy_probe,

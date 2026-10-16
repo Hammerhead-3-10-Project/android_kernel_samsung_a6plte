@@ -356,3 +356,74 @@
 	/delete-property/ qcom,commonlib64-loaded-by-uefi;
 	qcom,appsbl-qseecom-support;
 };
+
+/* Touchscreen: Samsung sec_ts on BLSP1 QUP2 (i2c_2), supplied by a GPIO-controlled 1.8 V LDO. */
+&tlmm {
+	tsp_int {
+		tsp_int_active: tsp_int_active {
+			mux {
+				pins = "gpio59";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio59";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+		tsp_int_suspend: tsp_int_suspend {
+			mux {
+				pins = "gpio59";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio59";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+	};
+};
+
+&soc {
+	tsp_ldo_en: tsp_ldo_en {
+		compatible = "regulator-fixed";
+		regulator-name = "tsp_ldo_en";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&tlmm 139 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+};
+
+&i2c_2 {
+	status = "okay";
+
+	touchscreen@48 {
+		compatible = "sec,sec_ts";
+		reg = <0x48>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <59 0>;
+		pinctrl-names = "on_state", "off_state";
+		pinctrl-0 = <&tsp_int_active>;
+		pinctrl-1 = <&tsp_int_suspend>;
+		sec,irq_gpio = <&tlmm 59 0>;
+		sec,irq_type = <0x2008>;
+		sec,max_coords = <4096 4096>;
+		sec,num_lines = <30 15>;
+		sec,use_ic_resolution;
+		sec,mis_cal_check = <1>;
+		sec,use_gpio_ldo;
+		sec,regulator_avdd = "tsp_ldo_en";
+		sec,regulator_boot_on;
+		sec,grip_area = <512>;
+		sec,bringup = <3>;
+		sec,tclm_level = <2>;
+		sec,afe_base = <0x104>;
+		sec,project_name = "A6plus", "A605F";
+		sec,firmware_name = "tsp_sec/y661_a6plus.fw", "tsp_sec/y661_a6plus.fw";
+		sec,factory_item_version = <1>;
+		status = "okay";
+	};
+};

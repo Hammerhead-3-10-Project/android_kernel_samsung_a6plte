@@ -1497,4 +1497,6 @@ config TOUCHSCREEN_HIMAX_HS50
 source "drivers/input/touchscreen/hxchipset_HS50/Kconfig"
 
 
+
+source "drivers/input/touchscreen/sec_ts/Kconfig"
 endif

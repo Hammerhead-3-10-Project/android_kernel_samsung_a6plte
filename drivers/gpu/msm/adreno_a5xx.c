@@ -2269,7 +2269,11 @@ static int a5xx_microcode_load(struct adreno_device *adreno_dev)
 		 */
 		do {
 			ret = 0;
+			pr_err("a5xx_microcode_load: calling subsystem_get(%s)\n",
+				adreno_dev->gpucore->zap_name);
 			ptr = subsystem_get(adreno_dev->gpucore->zap_name);
+			pr_err("a5xx_microcode_load: subsystem_get returned %ld\n",
+				IS_ERR_OR_NULL(ptr) ? (long)PTR_ERR_OR_ZERO(ptr) : 0L);
 
 			/* Return error if the zap shader cannot be loaded */
 			if (IS_ERR_OR_NULL(ptr)) {
@@ -2473,7 +2477,18 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev,
 	adreno_writereg64(adreno_dev, ADRENO_REG_CP_RB_BASE,
 			ADRENO_REG_CP_RB_BASE_HI, rb->buffer_desc.gpuaddr);
 
+	pr_err("a5xx_rb_start: rb=%llx rptr_shadow=%llx scratch=%llx pm4=%llx(%x) pfp=%llx(%x) memstore=%llx\n",
+		(u64)rb->buffer_desc.gpuaddr, (u64)addr,
+		(u64)device->scratch.gpuaddr,
+		(u64)ADRENO_FW(adreno_dev, ADRENO_FW_PM4)->memdesc.gpuaddr,
+		ADRENO_FW(adreno_dev, ADRENO_FW_PM4)->version,
+		(u64)ADRENO_FW(adreno_dev, ADRENO_FW_PFP)->memdesc.gpuaddr,
+		ADRENO_FW(adreno_dev, ADRENO_FW_PFP)->version,
+		(u64)device->memstore.gpuaddr);
+
 	ret = a5xx_microcode_load(adreno_dev);
+	pr_err("a5xx_rb_start: microcode_load ret=%d zap_loaded=%u\n",
+		ret, adreno_dev->zap_loaded);
 	if (ret)
 		return ret;
 

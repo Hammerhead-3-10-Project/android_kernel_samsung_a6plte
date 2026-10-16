@@ -2119,6 +2119,8 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 
 	is_on = !!is_on;
 	dwc->softconnect = is_on;
+	dev_info(dwc->dev, "dbg: pullup(%d) vbus_active=%d gadget_driver=%p\n",
+		 is_on, dwc->vbus_active, dwc->gadget_driver);
 	if ((dwc->is_drd && !dwc->vbus_active) || !dwc->gadget_driver) {
 		/*
 		 * Need to wait for vbus_session(on) from otg driver or to
@@ -3212,6 +3214,8 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	ktime_t	current_time;
 
+	dev_info(dwc->dev, "dbg: bus reset event\n");
+
 	dwc->connected = true;
 
 	pr_info("usb: %s\n", __func__);
@@ -3363,6 +3367,8 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	u8			speed;
 
+	dev_info(dwc->dev, "dbg: connect done DSTS=%08x\n",
+		 dwc3_readl(dwc->regs, DWC3_DSTS));
 	dbg_event(0xFF, "CONNECT DONE", 0);
 	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
 	speed = reg & DWC3_DSTS_CONNECTSPD;
@@ -3776,6 +3782,8 @@ static void dwc3_process_event_entry(struct dwc3 *dwc,
 	/* skip event processing in absence of vbus */
 	if (!dwc->vbus_active) {
 		dbg_event(0xFF, "SKIP_EVT", event->raw);
+		pr_info_ratelimited("dwc3 dbg: event %08x skipped, vbus_active=0\n",
+				    event->raw);
 		return;
 	}
 

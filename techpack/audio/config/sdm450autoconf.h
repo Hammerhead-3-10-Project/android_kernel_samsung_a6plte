@@ -60,6 +60,8 @@
 #define CONFIG_SND_SOC_FS16XX 1
 #define CONFIG_SND_SOC_TFA98XX 1
 #define CONFIG_SND_SMARTPA_AW8864 1
+#define CONFIG_SND_SOC_TFA9872 1
+#define CONFIG_SEC_SND_TFA98XX 1
 /* huaqin add bringup nxp & foursemi smartpa by xudayi at 2019/07/15 end */
 /* huaqin add HS70-24 bring up aw smartpa by xuyuqing at 2019/10/31 start */
 #define CONFIG_SND_SMARTPA_AW882xx 1

@@ -429,3 +429,88 @@
 };
 
 #include "sdm450-sec-a6plte-battery.dtsi"
+
+/* Audio: NXP TFA9872 speaker amplifier on the quaternary MI2S (as on the stock DT) */
+&tlmm {
+	quat_tlmm_lines_act: quat_tlmm_lines_act {
+		mux {
+			pins = "gpio135", "gpio138", "gpio137";
+			function = "sec_mi2s";
+		};
+		config {
+			pins = "gpio135", "gpio138", "gpio137";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+
+	quat_tlmm_lines_sus: quat_tlmm_lines_sus {
+		mux {
+			pins = "gpio135", "gpio138", "gpio137";
+			function = "sec_mi2s";
+		};
+		config {
+			pins = "gpio135", "gpio138", "gpio137";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	quat_tlmm_ws_act: quat_tlmm_ws_act {
+		mux {
+			pins = "gpio136";
+			function = "sec_mi2s";
+		};
+		config {
+			pins = "gpio136";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+
+	quat_tlmm_ws_sus: quat_tlmm_ws_sus {
+		mux {
+			pins = "gpio136";
+			function = "sec_mi2s";
+		};
+		config {
+			pins = "gpio136";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+/ {
+	cdc_quat_mi2s_gpios: msm_cdc_pinctrl_quat {
+		compatible = "qcom,msm-cdc-pinctrl";
+		pinctrl-names = "aud_active", "aud_sleep";
+		pinctrl-0 = <&quat_tlmm_lines_act &quat_tlmm_ws_act>;
+		pinctrl-1 = <&quat_tlmm_lines_sus &quat_tlmm_ws_sus>;
+	};
+};
+
+&i2c_5 {
+	status = "okay";
+
+	tfa98xx: tfa98xx@34 {
+		#sound-dai-cells = <1>;
+		compatible = "nxp,tfa98xx";
+		reg = <0x34>;
+	};
+};
+
+&int_codec {
+	qcom,model = "msm8952-snd-card";
+	qcom,msm-ext-pa = "quaternary";
+	/* gpio93 (pri/quin lines) is the panel supply on this board: do not touch it */
+	/delete-property/ qcom,pri-mi2s-gpios;
+	/delete-property/ qcom,quin-mi2s-gpios;
+	qcom,quat-mi2s-gpios = <&cdc_quat_mi2s_gpios>;
+	qcom,nxp-amp-conf = <0x1006>;
+	speaker-amps = <&tfa98xx>;
+
+	speaker-dai {
+		sound-dai = <&tfa98xx 0>;
+	};
+};

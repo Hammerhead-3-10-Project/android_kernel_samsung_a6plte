@@ -58,6 +58,22 @@ static int msm_proxy_rx_ch = 2;
 static int msm_vi_feed_tx_ch = 2;
 static int mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
 static int mi2s_rx_bits_per_sample = 16;
+#if defined(CONFIG_SEC_SND_TFA98XX)
+/* Samsung A6+: NXP TFA9872 speaker amplifier on the quaternary MI2S */
+struct tfa98xx_conf {
+	int amp_rx_port_id;
+	int sample_rate;
+	int bit_format;
+	int channel;
+};
+
+static struct tfa98xx_conf nxp_amp_cfg = {
+	.amp_rx_port_id = 0,
+	.sample_rate = 48000,
+	.bit_format = 16,
+	.channel = 2,
+};
+#endif
 static int mi2s_rx_sample_rate = SAMPLING_RATE_48KHZ;
 /* HS60 add HS60-98 bringup awinic pa for HAC by xudayi at 2019/07/25 start */
 static int hac_ext_pa_gpio;
@@ -525,6 +541,24 @@ static int msm_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
+#if defined(CONFIG_SEC_SND_TFA98XX)
+static int msm_amp_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+				struct snd_pcm_hw_params *params)
+{
+	struct snd_interval *rate = hw_param_interval(params,
+					SNDRV_PCM_HW_PARAM_RATE);
+	struct snd_interval *channels = hw_param_interval(params,
+					SNDRV_PCM_HW_PARAM_CHANNELS);
+
+	param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+			SNDRV_PCM_FORMAT_S16_LE);
+	rate->min = rate->max = nxp_amp_cfg.sample_rate;
+	channels->min = channels->max = nxp_amp_cfg.channel;
+
+	return 0;
+}
+#endif
+
 /* HS60 add HS60-29 integrate nxp smartpa cal func by xudayi at 2019/07/23 start */
 static int msm_quin_mi2s_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 				struct snd_pcm_hw_params *params)
@@ -722,6 +756,10 @@ static uint32_t get_mi2s_rx_clk_val(int port_id)
 	 */
 	if (is_mi2s_rx_port(port_id))
 		clk_val = (mi2s_rx_sample_rate * mi2s_rx_bits_per_sample * 2);
+#if defined(CONFIG_SEC_SND_TFA98XX)
+	if (nxp_amp_cfg.amp_rx_port_id && port_id == nxp_amp_cfg.amp_rx_port_id)
+		clk_val = nxp_amp_cfg.sample_rate * nxp_amp_cfg.bit_format * 2;
+#endif
 
 	pr_debug("%s: MI2S Rx bit clock value: 0x%0x\n", __func__, clk_val);
 	return clk_val;
@@ -2572,12 +2610,21 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.stream_name = "Quaternary MI2S Playback",
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
+#if defined(CONFIG_SEC_SND_TFA98XX)
+		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_CBS_CFS,
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
+#if defined(CONFIG_SEC_SND_TFA98XX)
+		.be_hw_params_fixup = msm_amp_mi2s_rx_be_hw_params_fixup,
+#else
 		.be_hw_params_fixup = msm_mi2s_rx_be_hw_params_fixup,
+#endif
 		.ops = &msm8952_quat_mi2s_be_ops,
 		.ignore_pmdown_time = 1, /* dai link has playback support */
 		.ignore_suspend = 1,
@@ -2587,8 +2634,13 @@ static struct snd_soc_dai_link msm8952_dai[] = {
 		.stream_name = "Quaternary MI2S Capture",
 		.cpu_dai_name = "msm-dai-q6-mi2s.3",
 		.platform_name = "msm-pcm-routing",
+#if defined(CONFIG_SEC_SND_TFA98XX)
+		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_CBS_CFS,
+#else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
+#endif
 		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.id = MSM_BACKEND_DAI_QUATERNARY_MI2S_TX,
@@ -3111,6 +3163,38 @@ int msm8952_init_wsa_switch_supply(struct platform_device *pdev,
 	return ret;
 }
 
+#if defined(CONFIG_SEC_SND_TFA98XX)
+static struct snd_soc_codec_conf amp_conf[] = {
+	{
+		.name_prefix = "NXP",
+	},
+};
+
+/* Bind the quaternary MI2S back ends to the codec of the "speaker-dai" node */
+static void tfa98xx_get_codec_name(struct device *dev)
+{
+	struct device_node *np;
+	int i, ret;
+
+	np = of_get_child_by_name(dev->of_node, "speaker-dai");
+	if (!np) {
+		dev_info(dev, "no speaker-dai node\n");
+		return;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(msm8952_dai); i++) {
+		if (strcmp(msm8952_dai[i].name, LPASS_BE_QUAT_MI2S_RX) &&
+		    strcmp(msm8952_dai[i].name, LPASS_BE_QUAT_MI2S_TX))
+			continue;
+		msm8952_dai[i].codec_of_node = of_parse_phandle(np, "sound-dai", 0);
+		ret = snd_soc_of_get_dai_name(np, &msm8952_dai[i].codec_dai_name);
+		if (ret)
+			dev_err(dev, "failed to get speaker dai name: %d\n", ret);
+	}
+	of_node_put(np);
+}
+#endif /* CONFIG_SEC_SND_TFA98XX */
+
 static struct snd_soc_card *msm8952_populate_sndcard_dailinks(
 						struct device *dev)
 {
@@ -3120,6 +3204,9 @@ static struct snd_soc_card *msm8952_populate_sndcard_dailinks(
 
 	card->name = dev_name(dev);
 	len1 = ARRAY_SIZE(msm8952_dai);
+#if defined(CONFIG_SEC_SND_TFA98XX)
+	tfa98xx_get_codec_name(dev);
+#endif
 
 	/* huaqin add bringup nxp & foursemi smartpa by xudayi at 2019/07/15 start */
 	if(card_smartpa == 6){
@@ -3442,6 +3529,18 @@ parse_mclk_freq:
 	/* Initialize loopback mode to false */
 	pdata->lb_mode = false;
 	msm8952_dt_parse_cap_info(pdev, pdata);
+#if defined(CONFIG_SEC_SND_TFA98XX)
+	of_property_read_u32(pdev->dev.of_node, "qcom,nxp-amp-conf",
+			&nxp_amp_cfg.amp_rx_port_id);
+	if (!card->codec_conf) {
+		amp_conf[0].of_node = of_parse_phandle(pdev->dev.of_node,
+						"speaker-amps", 0);
+		if (amp_conf[0].of_node) {
+			card->codec_conf = amp_conf;
+			card->num_configs = ARRAY_SIZE(amp_conf);
+		}
+	}
+#endif
 
 	card->dev = &pdev->dev;
 	platform_set_drvdata(pdev, card);

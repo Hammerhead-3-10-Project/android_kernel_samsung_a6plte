@@ -782,6 +782,7 @@ void rfkill_pause_polling(struct rfkill *rfkill)
 }
 EXPORT_SYMBOL(rfkill_pause_polling);
 
+#ifdef CONFIG_RFKILL_PM
 void rfkill_resume_polling(struct rfkill *rfkill)
 {
 	BUG_ON(!rfkill);
@@ -817,6 +818,7 @@ static __maybe_unused int rfkill_resume(struct device *dev)
 
 	return 0;
 }
+#endif
 
 
 static struct class rfkill_class = {

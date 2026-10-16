@@ -819,6 +819,7 @@ static const char *trace_options[] = {
 	"irq-info",
 	"markers",
 	"function-trace",
+	"print-tgid",
 	NULL
 };
 
@@ -1292,6 +1293,7 @@ void tracing_reset_all_online_cpus(void)
 
 #define SAVED_CMDLINES_DEFAULT 128
 #define NO_CMDLINE_MAP UINT_MAX
+static unsigned saved_tgids[SAVED_CMDLINES];
 static arch_spinlock_t trace_cmdline_lock = __ARCH_SPIN_LOCK_UNLOCKED;
 struct saved_cmdlines_buffer {
 	unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
@@ -2601,6 +2603,13 @@ static void print_func_help_header(struct trace_buffer *buf, struct seq_file *m)
 	seq_puts(m, "#              | |       |          |         |\n");
 }
 
+static void print_func_help_header_tgid(struct trace_buffer *buf, struct seq_file *m)
+{
+	print_event_info(buf, m);
+	seq_puts(m, "#           TASK-PID    TGID   CPU#      TIMESTAMP  FUNCTION\n");
+	seq_puts(m, "#              | |        |      |          |         |\n");
+}
+
 static void print_func_help_header_irq(struct trace_buffer *buf, struct seq_file *m)
 {
 	print_event_info(buf, m);
@@ -2611,6 +2620,18 @@ static void print_func_help_header_irq(struct trace_buffer *buf, struct seq_file
 	seq_puts(m, "#                            ||| /     delay\n");
 	seq_puts(m, "#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION\n");
 	seq_puts(m, "#              | |       |   ||||       |         |\n");
+}
+
+static void print_func_help_header_irq_tgid(struct trace_buffer *buf, struct seq_file *m)
+{
+	print_event_info(buf, m);
+	seq_puts(m, "#                                      _-----=> irqs-off\n");
+	seq_puts(m, "#                                     / _----=> need-resched\n");
+	seq_puts(m, "#                                    | / _---=> hardirq/softirq\n");
+	seq_puts(m, "#                                    || / _--=> preempt-depth\n");
+	seq_puts(m, "#                                    ||| /     delay\n");
+	seq_puts(m, "#           TASK-PID    TGID   CPU#  ||||    TIMESTAMP  FUNCTION\n");
+	seq_puts(m, "#              | |        |      |   ||||       |         |\n");
 }
 
 void
@@ -2916,7 +2937,10 @@ void trace_default_header(struct seq_file *m)
 				print_func_help_header_irq(iter->trace_buffer,
 								 m);
 			else
-				print_func_help_header(iter->trace_buffer, m);
+				if (trace_flags & TRACE_ITER_TGID)
+					print_func_help_header_tgid(iter->trace_buffer, m);
+				else
+					print_func_help_header(iter->trace_buffer, m);
 		}
 	}
 }
@@ -6604,6 +6628,9 @@ init_tracer_tracefs(struct trace_array *tr, struct dentry *d_tracer)
 
 	trace_create_file("trace_marker", 0220, d_tracer,
 			  tr, &tracing_mark_fops);
+
+	trace_create_file("saved_tgids", 0444, d_tracer,
+			  tr, &tracing_saved_tgids_fops);
 
 	trace_create_file("trace_clock", 0644, d_tracer, tr,
 			  &trace_clock_fops);

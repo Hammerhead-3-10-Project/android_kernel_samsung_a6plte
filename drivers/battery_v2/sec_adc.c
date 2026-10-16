@@ -113,6 +113,13 @@ static int sec_bat_adc_ap_read(struct sec_battery_info *battery, int channel)
 	int retry_cnt = RETRY_CNT;
 	struct qpnp_vadc_result result;
 
+	if (IS_ERR_OR_NULL(adc_client)) {
+		/* The VADC probes after us on the 4.9 kernel: look it up again. */
+		adc_client = qpnp_get_vadc(battery->dev, "sec-battery");
+		if (IS_ERR_OR_NULL(adc_client))
+			return batt_adc_list[channel].prev_value;
+	}
+
 	if (batt_adc_list[channel].is_used) {
 		do {
 			ret = (batt_adc_list[channel].is_used) ?

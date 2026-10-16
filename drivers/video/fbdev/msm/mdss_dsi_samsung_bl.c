@@ -244,3 +244,39 @@ int mdss_dsi_samsung_bl_set(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 	mutex_unlock(&ss.lock);
 	return ret < 0 ? ret : 0;
 }
+
+/*
+ * The on-command rewrites B5h (ELVSS) and so destroys the factory value at
+ * parameter 23, which the stock driver reads before that write. Return the
+ * index at which the on-command has to be split (just before the F0h key that
+ * precedes the CAh gamma write), or -1.
+ */
+int mdss_dsi_samsung_bl_split(struct dsi_panel_cmds *on)
+{
+	int i;
+
+	for (i = 1; i < on->cmd_cnt; i++) {
+		const struct dsi_cmd_desc *c = &on->cmds[i];
+
+		if (c->dchdr.dlen > 1 && (u8)c->payload[0] == 0xca) {
+			const struct dsi_cmd_desc *k = &on->cmds[i - 1];
+
+			if (k->dchdr.dlen == 3 && (u8)k->payload[0] == 0xf0 &&
+			    (u8)k->payload[1] == 0x5a)
+				return i - 1;
+			return i;
+		}
+	}
+	return -1;
+}
+
+/* Read the factory calibration once, before the on-command overwrites it. */
+void mdss_dsi_samsung_bl_prepare(struct mdss_dsi_ctrl_pdata *ctrl)
+{
+	mutex_lock(&ss.lock);
+	if (!ss.tried) {
+		ss.tried = true;
+		ss.ready = !ss_init(ctrl);
+	}
+	mutex_unlock(&ss.lock);
+}

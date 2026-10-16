@@ -978,7 +978,18 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	pr_debug("%s: ndx=%d cmd_cnt=%d\n", __func__,
 				ctrl->ndx, on_cmds->cmd_cnt);
 
-	if (on_cmds->cmd_cnt)
+	if (on_cmds->cmd_cnt && pinfo->samsung_bl &&
+	    mdss_dsi_samsung_bl_split(on_cmds) > 0) {
+		struct dsi_panel_cmds head = *on_cmds, tail = *on_cmds;
+		int split = mdss_dsi_samsung_bl_split(on_cmds);
+
+		head.cmd_cnt = split;
+		tail.cmds = on_cmds->cmds + split;
+		tail.cmd_cnt = on_cmds->cmd_cnt - split;
+		mdss_dsi_panel_cmds_send(ctrl, &head, CMD_REQ_COMMIT);
+		mdss_dsi_samsung_bl_prepare(ctrl);
+		mdss_dsi_panel_cmds_send(ctrl, &tail, CMD_REQ_COMMIT);
+	} else if (on_cmds->cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
 
 	if (pinfo->compression_mode == COMPRESSION_DSC)

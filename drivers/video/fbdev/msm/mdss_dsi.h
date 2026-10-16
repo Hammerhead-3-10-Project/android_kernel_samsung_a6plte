@@ -663,6 +663,8 @@ void mdss_dsi_ctrl_setup(struct mdss_dsi_ctrl_pdata *ctrl);
 bool mdss_dsi_dln0_phy_err(struct mdss_dsi_ctrl_pdata *ctrl, bool print_en);
 void mdss_dsi_lp_cd_rx(struct mdss_dsi_ctrl_pdata *ctrl);
 void mdss_dsi_read_phy_revision(struct mdss_dsi_ctrl_pdata *ctrl);
+int mdss_dsi_samsung_bl_split(struct dsi_panel_cmds *on);
+void mdss_dsi_samsung_bl_prepare(struct mdss_dsi_ctrl_pdata *ctrl);
 int mdss_dsi_samsung_bl_set(struct mdss_dsi_ctrl_pdata *ctrl, int level);
 int mdss_dsi_panel_cmd_read(struct mdss_dsi_ctrl_pdata *ctrl, char cmd0,
 		char cmd1, void (*fxn)(int), char *rbuf, int len);

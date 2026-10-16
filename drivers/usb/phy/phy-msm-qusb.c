@@ -124,6 +124,7 @@ struct qusb_phy {
 	void __iomem		*tune2_efuse_reg;
 	void __iomem		*ref_clk_base;
 	void __iomem		*tcsr_clamp_dig_n;
+	void __iomem		*tcsr_phy_clk_scheme_sel;
 
 	struct clk		*ref_clk_src;
 	struct clk		*ref_clk;
@@ -566,6 +567,15 @@ static int qusb_phy_init(struct usb_phy *phy)
 	/* Require to get phy pll lock successfully */
 	usleep_range(150, 160);
 
+	/* As the 3.18 driver: the clock scheme is selected by a TCSR bit */
+	if (qphy->tcsr_phy_clk_scheme_sel) {
+		u32 sel = readl_relaxed(qphy->tcsr_phy_clk_scheme_sel);
+
+		qphy->is_se_clk = !!(sel & BIT(0));
+		dev_info(phy->dev, "TCSR clk scheme sel=0x%x -> %s clock\n",
+			 sel, qphy->is_se_clk ? "single-ended" : "differential");
+	}
+
 	/* Turn on phy ref_clk if DIFF_CLK else select SE_CLK */
 	if (qphy->ref_clk_base) {
 		if (!qphy->is_se_clk) {
@@ -995,6 +1005,15 @@ static int qusb_phy_probe(struct platform_device *pdev)
 			dev_err(dev, "erro invalid qusb_phy_clk_scheme\n");
 			return -EINVAL;
 		}
+	}
+
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+						"tcsr_phy_clk_scheme_sel");
+	if (res) {
+		qphy->tcsr_phy_clk_scheme_sel = devm_ioremap_nocache(dev,
+				res->start, resource_size(res));
+		if (IS_ERR(qphy->tcsr_phy_clk_scheme_sel))
+			qphy->tcsr_phy_clk_scheme_sel = NULL;
 	}
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,

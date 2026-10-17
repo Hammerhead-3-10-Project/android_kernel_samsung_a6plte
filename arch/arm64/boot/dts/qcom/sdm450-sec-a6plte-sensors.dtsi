@@ -157,7 +157,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c_20_active>;
 
-		pcal6416a@20 {
+		expander: pcal6416a@20 {
 			compatible = "pcal6416a,gpio-expander";
 			gpio-controller;
 			#gpio-cells = <2>;

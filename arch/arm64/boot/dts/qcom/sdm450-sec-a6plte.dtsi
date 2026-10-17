@@ -539,3 +539,4 @@
 	};
 };
 #include "sdm450-sec-a6plte-sensors.dtsi"
+#include "sdm450-sec-a6plte-camera.dtsi"

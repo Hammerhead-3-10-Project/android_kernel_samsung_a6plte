@@ -37,11 +37,13 @@ static const struct of_device_id msm_flash_dt_match[] = {
 static struct msm_flash_table msm_i2c_flash_table;
 static struct msm_flash_table msm_gpio_flash_table;
 static struct msm_flash_table msm_pmic_flash_table;
+static struct msm_flash_table msm_ext_pmic_flash_table;
 
 static struct msm_flash_table *flash_table[] = {
 	&msm_i2c_flash_table,
 	&msm_gpio_flash_table,
-	&msm_pmic_flash_table
+	&msm_pmic_flash_table,
+	&msm_ext_pmic_flash_table
 };
 
 static struct msm_camera_i2c_fn_t msm_sensor_cci_func_tbl = {
@@ -603,6 +605,9 @@ static int32_t msm_flash_prepare(
 	CDBG("%s:%d: State : %d\n",
 		__func__, __LINE__, flash_ctrl->flash_state);
 
+	if (flash_ctrl->flash_driver_type == FLASH_DRIVER_EXT_PMIC)
+		return 0;
+
 	if (flash_ctrl->switch_trigger == NULL) {
 		if (flash_ctrl->platform_flash_init)
 			return ret;
@@ -1123,6 +1128,7 @@ static int32_t msm_flash_get_dt_data(struct device_node *of_node,
 	struct msm_flash_ctrl_t *fctrl)
 {
 	int32_t rc = 0;
+	uint32_t flash_type = 0;
 
 	CDBG("called\n");
 
@@ -1154,6 +1160,14 @@ static int32_t msm_flash_get_dt_data(struct device_node *of_node,
 	} else {
 		fctrl->flash_driver_type = FLASH_DRIVER_I2C;
 	}
+
+	/* An external PMIC flash (Samsung SM5708) has no sources/GPIOs here */
+	rc = of_property_read_u32(of_node, "qcom,flash-type", &flash_type);
+	if (!rc && flash_type == FLASH_DRIVER_EXT_PMIC) {
+		fctrl->flash_driver_type = FLASH_DRIVER_EXT_PMIC;
+		return 0;
+	}
+	rc = 0;
 
 	/* Read the flash and torch source info from device tree node */
 	rc = msm_flash_get_pmic_source_info(of_node, fctrl);
@@ -1374,6 +1388,42 @@ static void __exit msm_flash_exit_module(void)
 {
 	platform_driver_unregister(&msm_flash_platform_driver);
 }
+
+/*
+ * Samsung SM5708 flash: the LED itself is driven by the sm5708-fled
+ * driver, which is not wired to this subdevice yet. Accept every command
+ * so that the camera can open; the flash simply stays off.
+ */
+static int32_t msm_ext_flash_init(struct msm_flash_ctrl_t *fctrl,
+	struct msm_flash_cfg_data_t *flash_data)
+{
+	return 0;
+}
+
+static int32_t msm_ext_flash_release(struct msm_flash_ctrl_t *fctrl)
+{
+	fctrl->flash_state = MSM_CAMERA_FLASH_RELEASE;
+	return 0;
+}
+
+static int32_t msm_ext_flash_nop(struct msm_flash_ctrl_t *fctrl,
+	struct msm_flash_cfg_data_t *flash_data)
+{
+	return 0;
+}
+
+static struct msm_flash_table msm_ext_pmic_flash_table = {
+	.flash_driver_type = FLASH_DRIVER_EXT_PMIC,
+	.func_tbl = {
+		.camera_flash_init = msm_ext_flash_init,
+		.camera_flash_release = msm_ext_flash_release,
+		.camera_flash_off = msm_ext_flash_nop,
+		.camera_flash_low = msm_ext_flash_nop,
+		.camera_flash_high = msm_ext_flash_nop,
+		.camera_flash_query_current = NULL,
+	},
+};
+
 
 static struct msm_flash_table msm_pmic_flash_table = {
 	.flash_driver_type = FLASH_DRIVER_PMIC,

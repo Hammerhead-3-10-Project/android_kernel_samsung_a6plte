@@ -264,7 +264,7 @@ static int32_t msm_sensor_driver_create_i2c_v4l_subdev
 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, client);
 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_pads_init(&s_ctrl->msm_sd.sd.entity, 0, NULL);
-	s_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR;
+	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
 	s_ctrl->msm_sd.sd.entity.name =	s_ctrl->msm_sd.sd.name;
 	s_ctrl->sensordata->sensor_info->session_id = session_id;
 	s_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x3;
@@ -308,7 +308,7 @@ static int32_t msm_sensor_driver_create_v4l_subdev
 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, s_ctrl->pdev);
 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_pads_init(&s_ctrl->msm_sd.sd.entity, 0, NULL);
-	s_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR;
+	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
 	s_ctrl->msm_sd.sd.entity.name = s_ctrl->msm_sd.sd.name;
 	s_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x3;
 	rc = msm_sd_register(&s_ctrl->msm_sd);
@@ -452,45 +452,6 @@ static int32_t msm_sensor_fill_actuator_subdevid_by_name(
 		*actuator_subdev_id = val;
 		of_node_put(src_node);
 		src_node = NULL;
-	}
-
-	return rc;
-}
-
-static int32_t msm_sensor_fill_laser_led_subdevid_by_name(
-				struct msm_sensor_ctrl_t *s_ctrl)
-{
-	int32_t rc = 0;
-	struct device_node *src_node = NULL;
-	uint32_t val = 0;
-	int32_t *laser_led_subdev_id;
-	struct  msm_sensor_info_t *sensor_info;
-	struct device_node *of_node = s_ctrl->of_node;
-
-	if (!of_node)
-		return -EINVAL;
-
-	sensor_info = s_ctrl->sensordata->sensor_info;
-	laser_led_subdev_id = &sensor_info->subdev_id[SUB_MODULE_LASER_LED];
-	/* set sudev id to -1 and try to found new id */
-	*laser_led_subdev_id = -1;
-
-
-	src_node = of_parse_phandle(of_node, "qcom,laserled-src", 0);
-	if (!src_node) {
-		CDBG("%s:%d src_node NULL\n", __func__, __LINE__);
-	} else {
-		rc = of_property_read_u32(src_node, "cell-index", &val);
-		CDBG("%s qcom,laser led cell index %d, rc %d\n", __func__,
-			val, rc);
-		of_node_put(src_node);
-		src_node = NULL;
-		if (rc < 0) {
-			pr_err("%s cell index not found %d\n",
-				__func__, __LINE__);
-			return -EINVAL;
-		}
-		*laser_led_subdev_id = val;
 	}
 
 	return rc;
@@ -917,8 +878,6 @@ int32_t msm_sensor_driver_probe(void *setting,
 
 	unsigned long                        mount_pos = 0;
 	uint32_t                             is_yuv;
-	struct msm_camera_i2c_reg_array     *reg_setting = NULL;
-	struct msm_sensor_id_info_t         *id_info = NULL;
 
 	/* Validate input parameters */
 	if (!setting) {
@@ -974,48 +933,6 @@ int32_t msm_sensor_driver_probe(void *setting,
 		slave_info->sensor_id_info.sensor_id =
 			slave_info32->sensor_id_info.sensor_id;
 
-		slave_info->sensor_id_info.setting.addr_type =
-			slave_info32->sensor_id_info.setting.addr_type;
-		slave_info->sensor_id_info.setting.data_type =
-			slave_info32->sensor_id_info.setting.data_type;
-		slave_info->sensor_id_info.setting.delay =
-			slave_info32->sensor_id_info.setting.delay;
-		slave_info->sensor_id_info.setting.size =
-			slave_info32->sensor_id_info.setting.size;
-
-		if (!slave_info->sensor_id_info.setting.size ||
-			(slave_info->sensor_id_info.setting.size >
-				I2C_REG_DATA_MAX)) {
-			CDBG("%s:No writes needed to probe\n", __func__);
-			slave_info->sensor_id_info.setting.reg_setting = NULL;
-		} else {
-			id_info = &(slave_info->sensor_id_info);
-			reg_setting =
-				kzalloc(id_info->setting.size *
-					(sizeof
-					(struct msm_camera_i2c_reg_array)),
-					GFP_KERNEL);
-			if (!reg_setting) {
-				rc = -ENOMEM;
-				goto free_slave_info;
-			}
-			if (copy_from_user(reg_setting,
-				(void __user *)
-				compat_ptr(slave_info32->sensor_id_info.
-				setting.reg_setting),
-				slave_info->sensor_id_info.setting.size *
-				sizeof(struct msm_camera_i2c_reg_array))) {
-				pr_err("%s:%d: sensor id info copy failed\n",
-					__func__, __LINE__);
-				kfree(reg_setting);
-				rc = -EFAULT;
-				goto free_slave_info;
-			}
-
-			slave_info->sensor_id_info.setting.reg_setting =
-				reg_setting;
-		}
-
 		slave_info->slave_addr = slave_info32->slave_addr;
 		slave_info->power_setting_array.size =
 			slave_info32->power_setting_array.size;
@@ -1049,37 +966,6 @@ int32_t msm_sensor_driver_probe(void *setting,
 			pr_err("failed: copy_from_user");
 			rc = -EFAULT;
 			goto free_slave_info;
-		}
-		if (!slave_info->sensor_id_info.setting.size ||
-			slave_info->sensor_id_info.setting.size >
-			I2C_REG_DATA_MAX) {
-			CDBG("%s:No writes needed to probe\n", __func__);
-			slave_info->sensor_id_info.setting.reg_setting = NULL;
-		} else {
-			id_info = &(slave_info->sensor_id_info);
-			reg_setting =
-				kzalloc(id_info->setting.size *
-					(sizeof
-					(struct msm_camera_i2c_reg_array)),
-					GFP_KERNEL);
-			if (!reg_setting) {
-				rc = -ENOMEM;
-				goto free_slave_info;
-			}
-			if (copy_from_user(reg_setting,
-				(void __user *)
-				slave_info->sensor_id_info.setting.reg_setting,
-				slave_info->sensor_id_info.setting.size *
-				sizeof(struct msm_camera_i2c_reg_array))) {
-				pr_err("%s:%d: sensor id info copy failed\n",
-					__func__, __LINE__);
-				kfree(reg_setting);
-				rc = -EFAULT;
-				goto free_slave_info;
-			}
-
-			slave_info->sensor_id_info.setting.reg_setting =
-				reg_setting;
 		}
 	}
 
@@ -1196,7 +1082,7 @@ int32_t msm_sensor_driver_probe(void *setting,
 		slave_info->sensor_id_info.sensor_id_reg_addr;
 	camera_info->sensor_id = slave_info->sensor_id_info.sensor_id;
 	camera_info->sensor_id_mask = slave_info->sensor_id_info.sensor_id_mask;
-	camera_info->setting = &(slave_info->sensor_id_info.setting);
+	camera_info->setting = NULL;
 
 	/* Fill CCI master, slave address and CCI default params */
 	if (!s_ctrl->sensor_i2c_client) {
@@ -1267,11 +1153,6 @@ CSID_TG:
 	 * Update actuator subdevice Id by input actuator name
 	 */
 	rc = msm_sensor_fill_actuator_subdevid_by_name(s_ctrl);
-	if (rc < 0) {
-		pr_err("%s failed %d\n", __func__, __LINE__);
-		goto free_camera_info;
-	}
-	rc = msm_sensor_fill_laser_led_subdevid_by_name(s_ctrl);
 	if (rc < 0) {
 		pr_err("%s failed %d\n", __func__, __LINE__);
 		goto free_camera_info;
@@ -1378,7 +1259,6 @@ camera_power_down:
 free_camera_info:
 	kfree(camera_info);
 free_slave_info:
-	kfree(slave_info->sensor_id_info.setting.reg_setting);
 	kfree(slave_info);
 	return rc;
 }

@@ -88,7 +88,6 @@ enum sensor_sub_module_t {
 	SUB_MODULE_EXT,
 	SUB_MODULE_IR_LED,
 	SUB_MODULE_IR_CUT,
-	SUB_MODULE_LASER_LED,
 	SUB_MODULE_MAX,
 };
 
@@ -252,7 +251,7 @@ struct csid_cfg_data {
 struct csiphy_cfg_data {
 	enum csiphy_cfg_type_t cfgtype;
 	union {
-		struct msm_camera_csiphy_params __user *csiphy_params;
+		struct msm_camera_csiphy_params *csiphy_params;
 		struct msm_camera_csi_lane_params *csi_lane_params;
 	} cfg;
 };
@@ -262,8 +261,18 @@ enum eeprom_cfg_type_t {
 	CFG_EEPROM_GET_CAL_DATA,
 	CFG_EEPROM_READ_CAL_DATA,
 	CFG_EEPROM_WRITE_DATA,
+	CFG_EEPROM_COMPRESS_DATA,
 	CFG_EEPROM_GET_MM_INFO,
 	CFG_EEPROM_INIT,
+	CFG_EEPROM_READ_DATA,
+	CFG_EEPROM_READ_COMPRESSED_DATA,
+	CFG_EEPROM_DECOMPRESS_DATA,
+	CFG_EEPROM_GET_ERASESIZE,
+	CFG_EEPROM_ERASE,
+	CFG_EEPROM_POWER_ON,
+	CFG_EEPROM_POWER_OFF,
+	CFG_EEPROM_READ_DATA_FROM_HW,
+	CFG_EEPROM_GET_FW_VERSION_INFO,
 };
 
 struct eeprom_get_t {
@@ -273,12 +282,23 @@ struct eeprom_get_t {
 struct eeprom_read_t {
 	uint8_t *dbuffer;
 	uint32_t num_bytes;
+	uint32_t addr;
+	uint32_t comp_size;
 };
 
 struct eeprom_write_t {
 	uint8_t *dbuffer;
 	uint32_t num_bytes;
+	uint32_t addr;
+	uint32_t *write_size;
+	uint8_t compress;
 };
+
+struct eeprom_erase_t {
+	uint32_t num_bytes;
+	uint32_t addr;
+};
+
 
 struct eeprom_get_cmm_t {
 	uint32_t cmm_support;
@@ -302,20 +322,11 @@ struct msm_ir_cut_cfg_data_t {
 	enum msm_ir_cut_cfg_type_t cfg_type;
 };
 
-struct msm_laser_led_cfg_data_t {
-	enum msm_laser_led_cfg_type_t cfg_type;
-	void __user                   *setting;
-	void __user                   *debug_reg;
-	uint32_t                      debug_reg_size;
-	uint16_t                      i2c_addr;
-	enum i2c_freq_mode_t          i2c_freq_mode;
-};
-
 struct msm_eeprom_cfg_data {
 	enum eeprom_cfg_type_t cfgtype;
-	uint8_t is_supported;
+	uint16_t is_supported;
 	union {
-		char eeprom_name[MAX_EEPROM_NAME];
+		char eeprom_name[MAX_SENSOR_NAME];
 		struct eeprom_get_t get_data;
 		struct eeprom_read_t read_data;
 		struct eeprom_write_t write_data;
@@ -411,7 +422,7 @@ struct msm_ois_params_t {
 	enum i2c_freq_mode_t i2c_freq_mode;
 	enum msm_camera_i2c_reg_addr_type i2c_addr_type;
 	enum msm_camera_i2c_data_type i2c_data_type;
-	struct reg_settings_ois_t __user *settings;
+	struct reg_settings_ois_t *settings;
 };
 
 struct msm_ois_set_info_t {
@@ -424,7 +435,7 @@ struct msm_actuator_move_params_t {
 	int16_t dest_step_pos;
 	int32_t num_steps;
 	uint16_t curr_lens_pos;
-	struct damping_params_t __user *ringing_params;
+	struct damping_params_t *ringing_params;
 };
 
 struct msm_actuator_tuning_params_t {
@@ -432,7 +443,7 @@ struct msm_actuator_tuning_params_t {
 	uint16_t pwd_step;
 	uint16_t region_size;
 	uint32_t total_steps;
-	struct region_params_t __user *region_params;
+	struct region_params_t *region_params;
 };
 
 struct park_lens_data_t {
@@ -451,8 +462,8 @@ struct msm_actuator_params_t {
 	enum i2c_freq_mode_t i2c_freq_mode;
 	enum msm_camera_i2c_reg_addr_type i2c_addr_type;
 	enum msm_camera_i2c_data_type i2c_data_type;
-	struct msm_actuator_reg_params_t __user *reg_tbl_params;
-	struct reg_settings_t __user *init_settings;
+	struct msm_actuator_reg_params_t *reg_tbl_params;
+	struct reg_settings_t *init_settings;
 	struct park_lens_data_t park_lens;
 };
 
@@ -544,8 +555,8 @@ struct msm_flash_init_info_t {
 	enum msm_flash_driver_type flash_driver_type;
 	uint32_t slave_addr;
 	enum i2c_freq_mode_t i2c_freq_mode;
-	struct msm_sensor_power_setting_array __user *power_setting_array;
-	struct msm_camera_i2c_reg_setting_array __user *settings;
+	struct msm_sensor_power_setting_array *power_setting_array;
+	struct msm_camera_i2c_reg_setting_array *settings;
 };
 
 struct msm_flash_cfg_data_t {
@@ -554,8 +565,9 @@ struct msm_flash_cfg_data_t {
 	int32_t flash_duration[MAX_LED_TRIGGERS];
 	union {
 		struct msm_flash_init_info_t *flash_init_info;
-		struct msm_camera_i2c_reg_setting_array __user *settings;
+		struct msm_camera_i2c_reg_setting_array *settings;
 	} cfg;
+	enum flash_position_t flash_position;
 };
 
 struct msm_flash_query_data_t {
@@ -569,6 +581,7 @@ enum msm_sensor_init_cfg_type_t {
 	CFG_SINIT_PROBE,
 	CFG_SINIT_PROBE_DONE,
 	CFG_SINIT_PROBE_WAIT_DONE,
+	CFG_SINIT_HWB,
 };
 
 struct sensor_init_cfg_data {
@@ -627,9 +640,6 @@ struct sensor_init_cfg_data {
 
 #define VIDIOC_MSM_IR_CUT_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 15, struct msm_ir_cut_cfg_data_t)
-
-#define VIDIOC_MSM_LASER_LED_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_laser_led_cfg_data_t)
 
 #endif
 

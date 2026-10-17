@@ -266,7 +266,7 @@ struct msm_mctl_post_proc_cmd {
 #define MSM_CAMERA_STROBE_FLASH_NONE 0
 #define MSM_CAMERA_STROBE_FLASH_XENON 1
 
-#define MSM_MAX_CAMERA_SENSORS  6
+#define MSM_MAX_CAMERA_SENSORS  5
 #define MAX_SENSOR_NAME 32
 #define MAX_CAM_NAME_SIZE 32
 #define MAX_ACT_MOD_NAME_SIZE 32
@@ -1990,7 +1990,8 @@ struct img_plane_info {
 
 #define QCAMERA_NAME "qcamera"
 #define QCAMERA_SERVER_NAME "qcamera_server"
-#define QCAMERA_VNODE_GROUP_ID MEDIA_ENT_F_IO_V4L
+#define QCAMERA_DEVICE_GROUP_ID 1
+#define QCAMERA_VNODE_GROUP_ID 2
 
 enum msm_cam_subdev_type {
 	CSIPHY_DEV,

@@ -170,7 +170,6 @@ int32_t msm_sensor_free_sensor_data(struct msm_sensor_ctrl_t *s_ctrl)
 		return 0;
 	kfree(s_ctrl->sensordata->slave_info);
 	slave_info = s_ctrl->sensordata->cam_slave_info;
-	kfree(slave_info->sensor_id_info.setting.reg_setting);
 	kfree(s_ctrl->sensordata->cam_slave_info);
 	kfree(s_ctrl->sensordata->actuator_info);
 	kfree(s_ctrl->sensordata->power_info.gpio_conf->gpio_num_info);

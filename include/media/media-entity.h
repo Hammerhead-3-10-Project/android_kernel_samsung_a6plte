@@ -263,6 +263,7 @@ struct media_entity {
 	const char *name;
 	enum media_entity_type obj_type;
 	u32 function;
+	u32 group_id;	/* Samsung/QTI camera userspace ABI */
 	unsigned long flags;
 
 	u16 num_pads;

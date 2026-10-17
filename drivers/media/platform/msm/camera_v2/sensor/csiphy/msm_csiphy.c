@@ -190,13 +190,13 @@ static int msm_csiphy_snps_2_lane_config(
 
 	csiphybase = csiphy_dev->base;
 
-	if (csiphy_params->data_rate >
+	if (0ULL >
 		SNPS_MAX_DATA_RATE_PER_LANE * num_lanes) {
 		pr_err("unsupported data rate\n");
 		return -EINVAL;
 	}
 
-	local_data_rate = csiphy_params->data_rate;
+	local_data_rate = 0ULL;
 
 	if (mode == TWO_LANE_PHY_A)
 		offset = 0x0;
@@ -220,7 +220,7 @@ static int msm_csiphy_snps_2_lane_config(
 		diff = diff_i;
 	}
 
-	csiphy_dev->snps_programmed_data_rate = csiphy_params->data_rate;
+	csiphy_dev->snps_programmed_data_rate = 0ULL;
 
 	if (mode == TWO_LANE_PHY_A) {
 		msm_camera_io_w(csiphy_dev->ctrl_reg->csiphy_snps_reg.
@@ -351,7 +351,7 @@ static int msm_csiphy_snps_lane_config(
 		num_lanes = 4;
 		if (csiphy_dev->snps_state != NOT_CONFIGURED) {
 			if (csiphy_dev->snps_programmed_data_rate !=
-				csiphy_params->data_rate)
+				0ULL)
 				pr_err("reconfiguring snps phy");
 			else
 				return 0;
@@ -372,7 +372,7 @@ static int msm_csiphy_snps_lane_config(
 			csiphy_dev->snps_state = CONFIGURED_COMBO_MODE;
 		} else {
 			if (csiphy_dev->snps_programmed_data_rate !=
-				csiphy_params->data_rate)
+				0ULL)
 				pr_err("reconfiguring snps phy");
 			else
 				return 0;
@@ -391,7 +391,7 @@ static int msm_csiphy_snps_lane_config(
 			csiphy_dev->snps_state = CONFIGURED_COMBO_MODE;
 		} else {
 			if (csiphy_dev->snps_programmed_data_rate !=
-				csiphy_params->data_rate)
+				0ULL)
 				pr_err("reconfiguring snps phy");
 			else
 				return 0;
@@ -1365,7 +1365,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 	CDBG("%s csiphy_params, mask = 0x%x cnt = %d, data rate = %llu\n",
 		__func__,
 		csiphy_params->lane_mask,
-		csiphy_params->lane_cnt, csiphy_params->data_rate);
+		csiphy_params->lane_cnt, 0ULL);
 	CDBG("%s csiphy_params, settle cnt = 0x%x csid %d\n",
 		__func__, csiphy_params->settle_cnt,
 		csiphy_params->csid_core);
@@ -2425,7 +2425,7 @@ static int csiphy_probe(struct platform_device *pdev)
 	snprintf(new_csiphy_dev->msm_sd.sd.name,
 		ARRAY_SIZE(new_csiphy_dev->msm_sd.sd.name), "msm_csiphy");
 	media_entity_pads_init(&new_csiphy_dev->msm_sd.sd.entity, 0, NULL);
-	new_csiphy_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CSIPHY;
+	new_csiphy_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CSIPHY;
 	new_csiphy_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x4;
 	msm_sd_register(&new_csiphy_dev->msm_sd);
 

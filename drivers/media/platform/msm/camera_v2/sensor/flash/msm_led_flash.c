@@ -81,7 +81,7 @@ int32_t msm_led_flash_create_v4lsubdev(struct platform_device *pdev, void *data)
 	snprintf(fctrl->msm_sd.sd.name, ARRAY_SIZE(fctrl->msm_sd.sd.name),
 		"msm_flash");
 	media_entity_pads_init(&fctrl->msm_sd.sd.entity, 0, NULL);
-	fctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_LED_FLASH;
+	fctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_LED_FLASH;
 	fctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x1;
 	msm_sd_register(&fctrl->msm_sd);
 
@@ -115,7 +115,7 @@ int32_t msm_led_i2c_flash_create_v4lsubdev(void *data)
 	snprintf(fctrl->msm_sd.sd.name, ARRAY_SIZE(fctrl->msm_sd.sd.name),
 		"msm_flash");
 	media_entity_pads_init(&fctrl->msm_sd.sd.entity, 0, NULL);
-	fctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_LED_FLASH;
+	fctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_LED_FLASH;
 	msm_sd_register(&fctrl->msm_sd);
 
 	msm_led_flash_v4l2_subdev_fops = v4l2_subdev_fops;

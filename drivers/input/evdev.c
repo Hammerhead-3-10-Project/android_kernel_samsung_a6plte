@@ -457,7 +457,7 @@ void input_booster(struct evdev_client* dev, int dev_head) {
 	}
 
 	if (!ib_init_succeed || dev->ev_cnt == 0) {
-		pr_err(ITAG"ev_cnt(%d) dt_infor hasn't mem alloc", dev->ev_cnt);
+		pr_err_once(ITAG"ev_cnt(%d) dt_infor hasn't mem alloc", dev->ev_cnt);
 		return;
 	}
 

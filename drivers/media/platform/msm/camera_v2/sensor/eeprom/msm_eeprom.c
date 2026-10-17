@@ -1981,6 +1981,8 @@ static struct i2c_driver msm_eeprom_i2c_driver = {
 	.remove = msm_eeprom_i2c_remove,
 	.driver = {
 		.name = "msm_eeprom",
+		.owner = THIS_MODULE,
+		.of_match_table = msm_eeprom_dt_match,
 	},
 };
 

@@ -1,0 +1,15 @@
+menuconfig SENSORS_FINGERPRINT
+	bool "Finger Print Sensor devices"
+	help
+	  Fingerprint sensor drivers (Samsung).
+
+if SENSORS_FINGERPRINT
+config SENSORS_FINGERPRINT_32BITS_PLATFORM_ONLY
+	bool "Fingerprint sensor supports only 32bits platform"
+	default n
+config SENSORS_ET5XX
+	tristate "ET5XX fingerprint sensor support"
+	default n
+	help
+	  Egistec ET5XX fingerprint sensor.
+endif

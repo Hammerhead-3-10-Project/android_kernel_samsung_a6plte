@@ -311,8 +311,10 @@ static int sec_jack_probe(struct platform_device *pdev)
 	j->dev = &pdev->dev;
 
 	rc = jack_parse_dt(j);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "device tree parsing failed: %d\n", rc);
 		return rc;
+	}
 
 	pc = devm_pinctrl_get_select(&pdev->dev, "earjack_gpio_active");
 	if (IS_ERR(pc) && PTR_ERR(pc) == -EPROBE_DEFER)
@@ -320,12 +322,18 @@ static int sec_jack_probe(struct platform_device *pdev)
 
 	rc = devm_gpio_request_one(&pdev->dev, j->det_gpio, GPIOF_IN,
 				   "jack_detect");
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot request detect gpio %d: %d\n",
+			j->det_gpio, rc);
 		return rc;
+	}
 	rc = devm_gpio_request_one(&pdev->dev, j->key_gpio, GPIOF_IN,
 				   "jack_key");
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot request key gpio %d: %d\n",
+			j->key_gpio, rc);
 		return rc;
+	}
 
 	j->input = devm_input_allocate_device(&pdev->dev);
 	if (!j->input)
@@ -335,15 +343,22 @@ static int sec_jack_probe(struct platform_device *pdev)
 	for (i = 0; i < NUM_ZONES; i++)
 		input_set_capability(j->input, EV_KEY, j->but_zones[i].code);
 	rc = input_register_device(j->input);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "input_register_device failed: %d\n", rc);
 		return rc;
+	}
 
 	rc = switch_dev_register(&h2w);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot register the h2w switch: %d\n", rc);
 		return rc;
+	}
 	rc = switch_dev_register(&send_end);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot register the send_end switch: %d\n",
+			rc);
 		goto err_h2w;
+	}
 
 	wakeup_source_init(&j->ws, "sec_jack");
 	j->wq = create_singlethread_workqueue("sec_jack");
@@ -358,19 +373,27 @@ static int sec_jack_probe(struct platform_device *pdev)
 
 	j->det_irq = gpio_to_irq(j->det_gpio);
 	j->key_irq = gpio_to_irq(j->key_gpio);
+	dev_info(&pdev->dev, "detect gpio %d irq %d, key gpio %d irq %d\n",
+		 j->det_gpio, j->det_irq, j->key_gpio, j->key_irq);
 
 	rc = devm_request_threaded_irq(&pdev->dev, j->det_irq, NULL,
 				       jack_detect_irq,
 				       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
 				       IRQF_ONESHOT, "sec_jack_detect", j);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot request the detect irq %d: %d\n",
+			j->det_irq, rc);
 		goto err_wq;
+	}
 	rc = devm_request_threaded_irq(&pdev->dev, j->key_irq, NULL,
 				       jack_key_irq,
 				       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
 				       IRQF_ONESHOT, "sec_jack_key", j);
-	if (rc)
+	if (rc) {
+		dev_err(&pdev->dev, "cannot request the key irq %d: %d\n",
+			j->key_irq, rc);
 		goto err_wq;
+	}
 	enable_irq_wake(j->det_irq);
 
 	/* a headset may already be plugged in */

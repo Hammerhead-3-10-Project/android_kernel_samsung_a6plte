@@ -1242,7 +1242,6 @@ static int __qusb_phy_probe(struct platform_device *pdev)
 	mutex_init(&qphy->phy_lock);
 	platform_set_drvdata(pdev, qphy);
 	INIT_DELAYED_WORK(&qphy->dbg_work, qusb_phy_dbg_work);
-	schedule_delayed_work(&qphy->dbg_work, 25 * HZ);
 
 	qphy->phy.label			= "msm-qusb-phy";
 	qphy->phy.init			= qusb_phy_init;

@@ -1132,7 +1132,7 @@ static int __sec_nfc_probe(struct device *dev)
 #ifdef FEATURE_SEC_NFC_TEST
 	g_nfc_info = info;
 	nfc_class = class_create(THIS_MODULE, "nfc_test");
-	if (IS_ERR(&nfc_class))
+	if (IS_ERR_OR_NULL(nfc_class))
 		NFC_LOG_ERR("NFC: failed to create nfc_test class\n");
 	else {
 		ret = class_create_file(nfc_class, &class_attr_test);
@@ -1141,7 +1141,7 @@ static int __sec_nfc_probe(struct device *dev)
 	}
 #endif
 	nfc_class = class_create(THIS_MODULE, "nfc");
-	if (IS_ERR(&nfc_class))
+	if (IS_ERR_OR_NULL(nfc_class))
 		NFC_LOG_ERR("NFC: failed to create nfc class\n");
 	else {
 		ret = class_create_file(nfc_class, &class_attr_nfc_support);

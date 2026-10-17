@@ -530,6 +530,12 @@
 	/* gpio93 (pri/quin lines) is the panel supply on this board: do not touch it */
 	/delete-property/ qcom,pri-mi2s-gpios;
 	/delete-property/ qcom,quin-mi2s-gpios;
+	/* No WSA881x amplifiers on the A6+ (disabled below): without this the machine driver defers forever */
+	/delete-property/ asoc-wsa-codec-names;
+	/delete-property/ asoc-wsa-codec-prefixes;
+	/delete-property/ qcom,wsa-max-devs;
+	/delete-property/ qcom,wsa-devs;
+	/delete-property/ qcom,wsa-aux-dev-prefix;
 	qcom,quat-mi2s-gpios = <&cdc_quat_mi2s_gpios>;
 	qcom,nxp-amp-conf = <0x1006>;
 	speaker-amps = <&tfa98xx>;

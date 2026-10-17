@@ -544,6 +544,14 @@
 		sound-dai = <&tfa98xx 0>;
 	};
 };
+/ {
+	/* vibration motor, switched by TLMM gpio 132 (stock "msm_vibrator") */
+	msm_vibrator {
+		compatible = "vibrator";
+		motor-en = <&tlmm 132 0>;
+	};
+};
+
 #include "sdm450-sec-a6plte-sensors.dtsi"
 #include "sdm450-sec-a6plte-camera.dtsi"
 

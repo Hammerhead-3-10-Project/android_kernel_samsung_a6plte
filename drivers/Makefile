@@ -182,6 +182,7 @@ obj-$(CONFIG_NVMEM)		+= nvmem/
 obj-$(CONFIG_ESOC)              += esoc/
 obj-$(CONFIG_FPGA)		+= fpga/
 obj-$(CONFIG_SENSORS)	+= sensors/
+obj-$(CONFIG_MSM_VIBRATOR)	+= motor/
 obj-$(CONFIG_TEE)		+= tee/
 obj-$(CONFIG_AFC)		+= afc/
 obj-$(CONFIG_ADSP_FACTORY)	+= adsp_factory/

@@ -1,0 +1,7 @@
+config MSM_VIBRATOR
+	tristate "Samsung GPIO vibrator (timed_output)"
+	depends on ANDROID_TIMED_OUTPUT && GPIOLIB
+	default n
+	help
+	  Vibration motor switched by a single GPIO, exposed as
+	  /sys/class/timed_output/vibrator/enable for the Samsung vibrator HAL.

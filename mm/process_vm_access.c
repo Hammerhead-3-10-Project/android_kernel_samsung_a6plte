@@ -9,6 +9,7 @@
  * 2 of the License, or (at your option) any later version.
  */
 
+#include <linux/task_integrity.h>
 #include <linux/mm.h>
 #include <linux/uio.h>
 #include <linux/sched.h>
@@ -213,6 +214,10 @@ static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
 			rc = -EPERM;
 		goto put_task_struct;
 	}
+
+	rc = five_process_vm_rw(task, vm_write);
+	if (rc)
+		goto put_task_struct;
 
 	for (i = 0; i < riovcnt && iov_iter_count(iter) && !rc; i++)
 		rc = process_vm_rw_single_vec(

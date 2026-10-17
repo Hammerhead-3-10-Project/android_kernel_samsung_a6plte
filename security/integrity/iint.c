@@ -72,6 +72,13 @@ static void iint_free(struct integrity_iint_cache *iint)
 {
 	kfree(iint->ima_hash);
 	iint->ima_hash = NULL;
+#ifdef CONFIG_FIVE
+	kfree(iint->five_label);
+	iint->five_label = NULL;
+	iint->five_flags = 0UL;
+	iint->five_status = FIVE_FILE_UNKNOWN;
+	iint->five_signing = false;
+#endif
 	iint->version = 0;
 	iint->flags = 0UL;
 	iint->atomic_flags = 0UL;
@@ -164,6 +171,11 @@ static void init_once(void *foo)
 	iint->evm_status = INTEGRITY_UNKNOWN;
 	iint->measured_pcrs = 0;
 	mutex_init(&iint->mutex);
+#ifdef CONFIG_FIVE
+	iint->five_flags = 0UL;
+	iint->five_status = FIVE_FILE_UNKNOWN;
+	iint->five_signing = false;
+#endif
 }
 
 static int __init integrity_iintcache_init(void)

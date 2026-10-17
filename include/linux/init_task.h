@@ -159,6 +159,23 @@ extern struct task_group root_task_group;
 # define INIT_VTIME(tsk)
 #endif
 
+#ifdef CONFIG_FIVE
+# define INIT_TASK_INTEGRITY(integrity) {				\
+	.user_value = INTEGRITY_NONE,					\
+	.value = INTEGRITY_NONE,					\
+	.usage_count = ATOMIC_INIT(1),					\
+	.value_lock = __SPIN_LOCK_UNLOCKED(integrity.value_lock),	\
+	.list_lock = __SPIN_LOCK_UNLOCKED(integrity.list_lock),		\
+	.events = { .list = LIST_HEAD_INIT(integrity.events.list),},	\
+}
+
+# define INIT_INTEGRITY(tsk)						\
+	.integrity = &init_integrity,
+#else
+# define INIT_INTEGRITY(tsk)
+# define INIT_TASK_INTEGRITY(integrity)
+#endif
+
 #define INIT_TASK_COMM "swapper"
 
 #ifdef CONFIG_RT_MUTEXES
@@ -272,6 +289,7 @@ extern struct task_group root_task_group;
 	INIT_VTIME(tsk)							\
 	INIT_NUMA_BALANCING(tsk)					\
 	INIT_KASAN(tsk)							\
+	INIT_INTEGRITY(tsk)						\
 }
 
 

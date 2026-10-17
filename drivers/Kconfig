@@ -231,4 +231,6 @@ source "drivers/muic/universal/Kconfig"
 
 source "drivers/gud/Kconfig"
 
+source "drivers/five/Kconfig"
+
 endmenu

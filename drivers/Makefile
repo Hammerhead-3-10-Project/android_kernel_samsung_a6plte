@@ -195,3 +195,4 @@ obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery_v2/
 obj-$(CONFIG_USE_MUIC)		+= muic/
 
 obj-$(CONFIG_TRUSTONIC_TEE)	+= gud/
+obj-$(CONFIG_FIVE_TEE_DRIVER)	+= five/

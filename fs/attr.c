@@ -5,6 +5,7 @@
  *  changes by Thomas Schoebel-Theuer
  */
 
+#include <linux/task_integrity.h>
 #include <linux/export.h>
 #include <linux/time.h>
 #include <linux/mm.h>
@@ -316,6 +317,7 @@ int notify_change2(struct vfsmount *mnt, struct dentry * dentry, struct iattr * 
 
 	if (!error) {
 		fsnotify_change(dentry, ia_valid);
+		five_inode_post_setattr(current, dentry);
 		ima_inode_post_setattr(dentry);
 		evm_inode_post_setattr(dentry, ia_valid);
 	}

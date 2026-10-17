@@ -193,3 +193,5 @@ obj-$(CONFIG_ADSP_FACTORY)	+= adsp_factory/
 obj-$(CONFIG_VBUS_NOTIFIER)	+= staging/samsung/sec_notifier/
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery_v2/
 obj-$(CONFIG_USE_MUIC)		+= muic/
+
+obj-$(CONFIG_TRUSTONIC_TEE)	+= gud/

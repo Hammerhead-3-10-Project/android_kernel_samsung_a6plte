@@ -3245,7 +3245,7 @@ static struct snd_soc_card *msm8952_populate_sndcard_dailinks(
 }
 
 
-static int msm8952_asoc_machine_probe(struct platform_device *pdev)
+static int msm8952_asoc_machine_probe_inner(struct platform_device *pdev)
 {
 	struct snd_soc_card *card;
 	struct msm_asoc_mach_data *pdata = NULL;
@@ -3411,6 +3411,7 @@ parse_mclk_freq:
 		}
 	}
 
+	pr_err("a6plte-snd: stage dailinks\n");
 	card = msm8952_populate_sndcard_dailinks(&pdev->dev);
 	dev_dbg(&pdev->dev, "default codec configured\n");
 	num_strings = of_property_count_strings(pdev->dev.of_node,
@@ -3581,13 +3582,17 @@ parse_mclk_freq:
 	if (ret)
 		goto err;
 
+	pr_err("a6plte-snd: stage populate_of_node\n");
 	ret = msm8952_populate_dai_link_component_of_node(card);
 	if (ret) {
+		pr_err("a6plte-snd: populate_of_node failed %d, deferring\n", ret);
 		ret = -EPROBE_DEFER;
 		goto err;
 	}
 
+	pr_err("a6plte-snd: stage register_card\n");
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
+	pr_err("a6plte-snd: register_card returned %d\n", ret);
 	if (ret) {
 		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n",
 			ret);
@@ -3613,6 +3618,16 @@ err:
 	}
 err1:
 	devm_kfree(&pdev->dev, pdata);
+	return ret;
+}
+
+static int msm8952_asoc_machine_probe(struct platform_device *pdev)
+{
+	int ret;
+
+	pr_err("a6plte-snd: probe enter\n");
+	ret = msm8952_asoc_machine_probe_inner(pdev);
+	pr_err("a6plte-snd: probe returned %d\n", ret);
 	return ret;
 }
 

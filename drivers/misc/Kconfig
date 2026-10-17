@@ -874,6 +874,14 @@ config SEC_MPP_SHARE
 	help
 	  Say Y to include support for mpp share
 
+config SAMSUNG_JACK
+	tristate "Samsung 3.5mm headset jack detection"
+	depends on SWITCH && GPIOLIB && INPUT
+	help
+	  Headset detection through a detect GPIO plus an ADC reading of the
+	  microphone line (the A6+ has no PMIC-based plug detection). Reports
+	  /sys/class/switch/h2w and the headset buttons.
+
 endmenu
 
 config OKL4_LINK_SHBUF

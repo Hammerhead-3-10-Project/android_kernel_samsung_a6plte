@@ -32,6 +32,7 @@
 #include "sdm660-cdc-irq.h"
 #include "msm-analog-cdc-regmap.h"
 #include "../wcd-mbhc-v2-api.h"
+#include <linux/sec_jack.h>
 
 #define DRV_NAME "pmic_analog_codec"
 #define SDM660_CDC_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
@@ -4162,6 +4163,43 @@ int msm_anlg_codec_info_create_codec_entry(struct snd_info_entry *codec_root,
 }
 EXPORT_SYMBOL(msm_anlg_codec_info_create_codec_entry);
 
+/*
+ * Samsung headset jack (drivers/misc/sec_jack.c): the plug is detected on a
+ * GPIO and the headset type is read from the microphone line, which needs
+ * the external microphone bias on while no stream is active.
+ */
+static struct snd_soc_codec *sec_jack_codec;
+static DEFINE_MUTEX(sec_jack_micbias_lock);
+
+int msm_anlg_cdc_sec_micbias(bool on)
+{
+	struct snd_soc_dapm_context *dapm;
+	const char *pin = "MIC BIAS External2";
+	int ret = 0;
+
+	mutex_lock(&sec_jack_micbias_lock);
+	if (!sec_jack_codec) {
+		mutex_unlock(&sec_jack_micbias_lock);
+		return -ENODEV;
+	}
+	dapm = snd_soc_codec_get_dapm(sec_jack_codec);
+
+	if (on) {
+		ret = snd_soc_dapm_force_enable_pin(dapm, pin);
+	} else {
+		/* drops the force; the pin goes back to normal DAPM control */
+		ret = snd_soc_dapm_disable_pin(dapm, pin);
+		if (!ret)
+			ret = snd_soc_dapm_enable_pin(dapm, pin);
+	}
+	if (!ret)
+		snd_soc_dapm_sync(dapm);
+	mutex_unlock(&sec_jack_micbias_lock);
+
+	return ret;
+}
+EXPORT_SYMBOL(msm_anlg_cdc_sec_micbias);
+
 static int msm_anlg_cdc_soc_probe(struct snd_soc_codec *codec)
 {
 	struct sdm660_cdc_priv *sdm660_cdc;
@@ -4170,6 +4208,9 @@ static int msm_anlg_cdc_soc_probe(struct snd_soc_codec *codec)
 
 	sdm660_cdc = dev_get_drvdata(codec->dev);
 	sdm660_cdc->codec = codec;
+	mutex_lock(&sec_jack_micbias_lock);
+	sec_jack_codec = codec;
+	mutex_unlock(&sec_jack_micbias_lock);
 
 	/* codec resmgr module init */
 	sdm660_cdc->spkdrv_reg =
@@ -4304,6 +4345,10 @@ static int msm_anlg_cdc_soc_remove(struct snd_soc_codec *codec)
 {
 	struct sdm660_cdc_priv *sdm660_cdc_priv =
 					dev_get_drvdata(codec->dev);
+
+	mutex_lock(&sec_jack_micbias_lock);
+	sec_jack_codec = NULL;
+	mutex_unlock(&sec_jack_micbias_lock);
 
 	sdm660_cdc_priv->spkdrv_reg = NULL;
 	sdm660_cdc_priv->on_demand_list[ON_DEMAND_MICBIAS].supply = NULL;

@@ -90,3 +90,4 @@ obj-y                           += huaqin/
 
 obj-$(CONFIG_OKL4_LINK_SHBUF)    += okl4-link-shbuf.o
 obj-$(CONFIG_SEC_MPP_SHARE)	+= sec_mux_sel.o
+obj-$(CONFIG_SAMSUNG_JACK)	+= sec_jack.o

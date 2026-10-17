@@ -552,6 +552,86 @@
 	};
 };
 
+/* 3.5mm jack: plug on gpio 48, headset button on gpio 141, microphone line read on MPP2 (VADC channel 0x11) */
+&tlmm {
+	earjack_det {
+		earjack_det_act: earjack_det_act {
+			mux {
+				pins = "gpio48";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio48";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+	};
+	earjack_switch {
+		earjack_switch_act: earjack_switch_act {
+			mux {
+				pins = "gpio141";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio141";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+	};
+};
+
+&pm8953_mpps {
+	earjack_mic {
+		earjack_mic_default: earjack_mic_default {
+			pins = "mpp2";
+			function = "analog";
+			input-enable;
+			qcom,amux-route = <1>;
+		};
+	};
+};
+
+&pm8953_vadc {
+	pinctrl-0 = <&pa_therm1_default &cas_therm_default &earjack_mic_default>;
+
+	chan@11 {
+		label = "mpp2_div1";
+		reg = <0x11>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <5>;
+		qcom,fast-avg-setup = <0>;
+	};
+};
+
+/ {
+	earjack {
+		compatible = "sec_jack";
+		detect-gpio = <&tlmm 48 0>;
+		key-gpio = <&tlmm 141 0>;
+		det-dbtime = <100>;
+		key-dbtime = <28>;
+		earjack-adc-channel = <0x11>;
+		qcom,earjack-read-vadc = <&pm8953_vadc>;
+		/* adc_high(mV) delay(us) check_count jack_type (2 = 3 pole, 1 = 4 pole) */
+		det-zones = <0 10000 10 2>,
+			    <970 10000 10 2>,
+			    <971 10000 10 1>,
+			    <9999 10000 10 1>;
+		/* key code, adc_low(mV), adc_high(mV): MEDIA, VOICECOMMAND, VOLUMEUP, VOLUMEDOWN */
+		but-zones = <226 0 308>,
+			    <582 309 352>,
+			    <115 353 470>,
+			    <114 471 810>;
+		pinctrl-names = "earjack_gpio_active";
+		pinctrl-0 = <&earjack_det_act &earjack_switch_act>;
+	};
+};
+
 #include "sdm450-sec-a6plte-sensors.dtsi"
 #include "sdm450-sec-a6plte-camera.dtsi"
 

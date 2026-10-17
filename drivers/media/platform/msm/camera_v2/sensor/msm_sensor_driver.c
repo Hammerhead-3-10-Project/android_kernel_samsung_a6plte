@@ -1108,28 +1108,30 @@ int32_t msm_sensor_driver_probe(void *setting,
 	cci_client->id_map = 0;
 	cci_client->i2c_freq_mode = slave_info->i2c_freq_mode;
 
-	/* Parse and fill vreg params for powerup settings */
-	rc = msm_camera_fill_vreg_params(
-		s_ctrl->sensordata->power_info.cam_vreg,
-		s_ctrl->sensordata->power_info.num_vreg,
-		s_ctrl->sensordata->power_info.power_setting,
-		s_ctrl->sensordata->power_info.power_setting_size);
-	if (rc < 0) {
-		pr_err("failed: msm_camera_get_dt_power_setting_data rc %d",
-			rc);
-		goto free_camera_info;
-	}
+	if (s_ctrl->sensordata->power_info.num_vreg > 0) {
+		/* Parse and fill vreg params for powerup settings */
+		rc = msm_camera_fill_vreg_params(
+			s_ctrl->sensordata->power_info.cam_vreg,
+			s_ctrl->sensordata->power_info.num_vreg,
+			s_ctrl->sensordata->power_info.power_setting,
+			s_ctrl->sensordata->power_info.power_setting_size);
+		if (rc < 0) {
+			pr_err("failed: msm_camera_get_dt_power_setting_data rc %d",
+				rc);
+			goto free_camera_info;
+		}
 
-	/* Parse and fill vreg params for powerdown settings*/
-	rc = msm_camera_fill_vreg_params(
-		s_ctrl->sensordata->power_info.cam_vreg,
-		s_ctrl->sensordata->power_info.num_vreg,
-		s_ctrl->sensordata->power_info.power_down_setting,
-		s_ctrl->sensordata->power_info.power_down_setting_size);
-	if (rc < 0) {
-		pr_err("failed: msm_camera_fill_vreg_params for PDOWN rc %d",
-			rc);
-		goto free_camera_info;
+		/* Parse and fill vreg params for powerdown settings*/
+		rc = msm_camera_fill_vreg_params(
+			s_ctrl->sensordata->power_info.cam_vreg,
+			s_ctrl->sensordata->power_info.num_vreg,
+			s_ctrl->sensordata->power_info.power_down_setting,
+			s_ctrl->sensordata->power_info.power_down_setting_size);
+		if (rc < 0) {
+			pr_err("failed: msm_camera_fill_vreg_params for PDOWN rc %d",
+				rc);
+			goto free_camera_info;
+		}
 	}
 
 CSID_TG:

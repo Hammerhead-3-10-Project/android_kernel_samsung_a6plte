@@ -964,8 +964,10 @@ static int msm_eeprom_i2c_probe(struct i2c_client *client,
 		&power_info->clk_ptr,
 		&power_info->clk_info_size);
 	if (rc < 0) {
-		pr_err("failed: msm_camera_get_clk_info rc %d", rc);
-		goto board_free;
+		/* the Samsung DT gives the EEPROMs no clocks: not fatal */
+		power_info->clk_info = NULL;
+		power_info->clk_ptr = NULL;
+		power_info->clk_info_size = 0;
 	}
 
 	rc = of_property_read_u32(of_node, "cell-index",

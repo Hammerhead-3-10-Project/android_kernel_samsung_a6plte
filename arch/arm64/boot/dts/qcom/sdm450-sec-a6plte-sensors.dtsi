@@ -299,7 +299,7 @@
 			clock-names = "iface_clk", "core_clk";
 			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>,
 				 <&clock_gcc clk_gcc_blsp1_qup4_spi_apps_clk>;
-			status = "disabled"; /* TODO: external abort on QUP_HW_VERSION read at probe */
+			status = "ok";
 
 			etspi-spi@0 {
 				compatible = "etspi,et5xx";

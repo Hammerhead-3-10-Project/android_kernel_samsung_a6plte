@@ -2375,6 +2375,18 @@ static int init_resources(struct platform_device *pdev)
 
 	pclk_enabled = 1;
 
+	{	/* bring-up diagnostics: remove once the QUP4 abort is understood */
+		void __iomem *g = ioremap(0x1800000, 0x6000);
+
+		if (g) {
+			pr_err("spi-dbg: rate=%lu qup4_cbcr=%08x ahb_cbcr=%08x rcg_cmd=%08x rcg_cfg=%08x\n",
+				clk_get_rate(dd->clk), readl_relaxed(g + 0x501c),
+				readl_relaxed(g + 0x1008), readl_relaxed(g + 0x5024),
+				readl_relaxed(g + 0x5028));
+			iounmap(g);
+		}
+	}
+
 	if (dd->pdata && dd->pdata->ver_reg_exists) {
 		enum msm_spi_qup_version ver =
 					msm_spi_get_qup_hw_ver(&pdev->dev, dd);

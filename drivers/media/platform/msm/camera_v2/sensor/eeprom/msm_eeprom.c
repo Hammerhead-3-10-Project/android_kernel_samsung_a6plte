@@ -1016,6 +1016,10 @@ static int msm_eeprom_i2c_probe(struct i2c_client *client,
 		eb_info->i2c_slaveaddr = temp;
 		CDBG("qcom,slave-addr = 0x%X\n", eb_info->i2c_slaveaddr);
 		eb_info->i2c_freq_mode = e_ctrl->i2c_freq_mode;
+		/* the QUP helpers expect the 8-bit slave address (addr >> 1) */
+		if (eb_info->i2c_slaveaddr != 0)
+			e_ctrl->i2c_client.client->addr =
+				eb_info->i2c_slaveaddr;
 
 		rc = msm_eeprom_parse_memory_map(of_node, &e_ctrl->cal_data);
 		if (rc < 0)

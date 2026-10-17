@@ -175,3 +175,55 @@
 		};
 	};
 };
+
+// Grip sensor (Abov A96T346), stock i2c@26 on TLMM 131 (SDA) / 128 (SCL).
+&tlmm {
+	grip_int: grip_int {
+		mux {
+			pins = "gpio86";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio86";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	grip_i2c: grip_i2c {
+		mux {
+			pins = "gpio128", "gpio131";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio128", "gpio131";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+/ {
+	i2c_grip: i2c@26 {
+		cell-index = <26>;
+		compatible = "i2c-gpio";
+		gpios = <&tlmm 131 0 &tlmm 128 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		a96t3x6@20 {
+			compatible = "a96t3x6";
+			reg = <0x20>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&grip_int &grip_i2c>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <86 0>;
+			a96t3x6,irq_gpio = <&tlmm 86 0>;
+			a96t3x6,ldo_en = <&tlmm 87 0>;
+			a96t3x6,fw_path = "abov/a96t346_j8plte.fw";
+			a96t3x6,chipid = "A96T346";
+			a96t3x6,firmup_cmd = <0x38>;
+			a96t3x6,earjack_noise = <0x01>;
+		};
+	};
+};

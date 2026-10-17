@@ -50,3 +50,10 @@ config SENSORS_LSM6DSL_I2C
 	default n
 	help
 	  I2C bus support for the LSM6DSL driver.
+
+config SENSORS_A96T3X6
+	depends on I2C
+	tristate "A96T3X6 driver for grip"
+	default n
+	help
+	  Say Y here if you use A96T3X6 for grip.

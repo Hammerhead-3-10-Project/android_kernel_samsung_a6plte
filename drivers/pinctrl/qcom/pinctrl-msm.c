@@ -508,6 +508,11 @@ static void msm_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
 	unsigned i;
 
 	for (i = 0; i < chip->ngpio; i++, gpio++) {
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
+		if (gpio >= CONFIG_SENSORS_FP_SPI_GPIO_START &&
+		    gpio <= CONFIG_SENSORS_FP_SPI_GPIO_END)
+			continue;
+#endif
 		msm_gpio_dbg_show_one(s, NULL, chip, i, gpio);
 		seq_puts(s, "\n");
 	}

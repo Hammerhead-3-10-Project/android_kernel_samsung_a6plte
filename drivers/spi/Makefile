@@ -1,3 +1,4 @@
+ccflags-$(CONFIG_SENSORS_FINGERPRINT) += -DENABLE_SENSORS_FPRINT_SECURE
 #
 # Makefile for kernel SPI drivers.
 #

@@ -403,5 +403,6 @@
 / {
 	aliases {
 		i2c6 = &i2c_6;
+		spi4 = &spi_4;
 	};
 };

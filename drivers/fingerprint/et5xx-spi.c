@@ -32,6 +32,16 @@
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 
+
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
+/* The Samsung cpufreq booster (set_freq_limit) does not exist in this kernel. */
+#define DVFS_FINGER_ID 0
+static inline int set_freq_limit(unsigned long id, unsigned int freq)
+{
+	return 0;
+}
+#endif
+
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 
 static LIST_HEAD(device_list);

@@ -13,3 +13,18 @@ config SENSORS_ET5XX
 	help
 	  Egistec ET5XX fingerprint sensor.
 endif
+
+config SENSORS_FP_SPI_NUMBER
+	int "SPI bus number of the TrustZone-owned fingerprint SPI"
+	depends on SENSORS_FINGERPRINT
+	default 4
+
+config SENSORS_FP_SPI_GPIO_START
+	int "First GPIO of the TrustZone-owned fingerprint SPI"
+	depends on SENSORS_FINGERPRINT
+	default 12
+
+config SENSORS_FP_SPI_GPIO_END
+	int "Last GPIO of the TrustZone-owned fingerprint SPI"
+	depends on SENSORS_FINGERPRINT
+	default 15

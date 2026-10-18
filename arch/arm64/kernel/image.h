@@ -66,10 +66,17 @@
  * regardless of the endianness of the kernel. While constant values could be
  * endian swapped in head.S, all are done here for consistency.
  */
+#ifdef CONFIG_PROCA
+#define PROCA_CONF_OFFSET (g_proca_config - _text)
+#else
+#define PROCA_CONF_OFFSET 0xecefecef
+#endif
+
 #define HEAD_SYMBOLS						\
 	DEFINE_IMAGE_LE64(_kernel_size_le, _end - _text);	\
 	DEFINE_IMAGE_LE64(_kernel_offset_le, TEXT_OFFSET);	\
-	DEFINE_IMAGE_LE64(_kernel_flags_le, __HEAD_FLAGS);
+	DEFINE_IMAGE_LE64(_kernel_flags_le, __HEAD_FLAGS); \
+	DEFINE_IMAGE_LE64(_proca_conf_offset, PROCA_CONF_OFFSET);
 
 #ifdef CONFIG_EFI
 

@@ -344,9 +344,6 @@ static ssize_t gadget_dev_desc_UDC_store(struct config_item *item,
 	if (name[len - 1] == '\n')
 		name[len - 1] = '\0';
 
-	pr_err("usb configfs dbg: UDC <- '%s' (udc_name=%s)\n", name,
-		gi->composite.gadget_driver.udc_name ?
-		gi->composite.gadget_driver.udc_name : "none");
 	mutex_lock(&gi->lock);
 
 	if (!strlen(name) || strcmp(name, "none") == 0) {
@@ -372,7 +369,6 @@ static ssize_t gadget_dev_desc_UDC_store(struct config_item *item,
 #endif
 		gi->composite.gadget_driver.udc_name = name;
 		ret = usb_gadget_probe_driver(&gi->composite.gadget_driver);
-		pr_err("usb configfs dbg: probe_driver('%s') = %d\n", name, ret);
 		if (ret) {
 			gi->composite.gadget_driver.udc_name = NULL;
 			goto err;

@@ -2088,11 +2088,6 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 	if (!timeout) {
 		dev_err(dwc->dev, "failed to %s controller\n",
 				is_on ? "start" : "stop");
-		dev_err(dwc->dev, "dbg: DSTS=%08x DCTL=%08x GUSB2PHYCFG=%08x GCTL=%08x\n",
-			dwc3_readl(dwc->regs, DWC3_DSTS),
-			dwc3_readl(dwc->regs, DWC3_DCTL),
-			dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0)),
-			dwc3_readl(dwc->regs, DWC3_GCTL));
 		if (is_on)
 			dbg_event(0xFF, "STARTTOUT", reg);
 		else
@@ -2127,8 +2122,6 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 
 	is_on = !!is_on;
 	dwc->softconnect = is_on;
-	dev_err(dwc->dev, "dbg: pullup(%d) vbus_active=%d gadget_driver=%p\n",
-		 is_on, dwc->vbus_active, dwc->gadget_driver);
 	if ((dwc->is_drd && !dwc3_vbus_is_active(dwc)) || !dwc->gadget_driver) {
 		/*
 		 * Need to wait for vbus_session(on) from otg driver or to
@@ -2271,9 +2264,6 @@ static int dwc3_gadget_vbus_session(struct usb_gadget *_gadget, int is_active)
 	}
 #endif
 
-	pr_err("dwc3 dbg: vbus_session(%d), vbus_active was %d\n", is_active, dwc->vbus_active);
-	if (!is_active)
-		dump_stack();
 	/* Mark that the vbus was powered */
 	dwc->vbus_active = is_active;
 
@@ -2443,7 +2433,6 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	struct dwc3		*dwc = gadget_to_dwc(g);
 	unsigned long		flags;
 	int			ret = 0;
-	dev_err(dwc->dev, "dbg: gadget_start (driver %p)\n", driver);
 
 	spin_lock_irqsave(&dwc->lock, flags);
 
@@ -3226,8 +3215,6 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	ktime_t	current_time;
 
-	dev_err(dwc->dev, "dbg: bus reset event\n");
-
 	dwc->connected = true;
 
 	pr_info("usb: %s\n", __func__);
@@ -3379,8 +3366,6 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 	u32			reg;
 	u8			speed;
 
-	dev_err(dwc->dev, "dbg: connect done DSTS=%08x\n",
-		 dwc3_readl(dwc->regs, DWC3_DSTS));
 	dbg_event(0xFF, "CONNECT DONE", 0);
 	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
 	speed = reg & DWC3_DSTS_CONNECTSPD;
@@ -3711,8 +3696,6 @@ static void dwc3_gadget_hibernation_interrupt(struct dwc3 *dwc,
 static void dwc3_gadget_interrupt(struct dwc3 *dwc,
 		const struct dwc3_event_devt *event)
 {
-	dev_err_ratelimited(dwc->dev, "dbg: device event type %d info %x\n",
-			event->type, event->event_info);
 	switch (event->type) {
 	case DWC3_DEVICE_EVENT_DISCONNECT:
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
@@ -3796,8 +3779,6 @@ static void dwc3_process_event_entry(struct dwc3 *dwc,
 	/* skip event processing in absence of vbus */
 	if (!dwc3_vbus_is_active(dwc)) {
 		dbg_event(0xFF, "SKIP_EVT", event->raw);
-		pr_err_ratelimited("dwc3 dbg: event %08x skipped, vbus_active=0\n",
-				    event->raw);
 		return;
 	}
 

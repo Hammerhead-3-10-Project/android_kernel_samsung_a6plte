@@ -26,7 +26,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/usb/phy.h>
 #include <linux/reset.h>
-#include <linux/workqueue.h>
 
 #define QUSB2PHY_PLL_STATUS	0x38
 #define QUSB2PHY_PLL_LOCK	BIT(5)
@@ -126,8 +125,6 @@ struct qusb_phy {
 	void __iomem		*ref_clk_base;
 	void __iomem		*tcsr_clamp_dig_n;
 	void __iomem		*tcsr_phy_clk_scheme_sel;
-	struct delayed_work	dbg_work;
-	u32			dbg_sel;
 
 	struct clk		*ref_clk_src;
 	struct clk		*ref_clk;
@@ -575,7 +572,6 @@ static int qusb_phy_init(struct usb_phy *phy)
 		u32 sel = readl_relaxed(qphy->tcsr_phy_clk_scheme_sel);
 
 		qphy->is_se_clk = !!(sel & BIT(0));
-		qphy->dbg_sel = sel;
 		dev_info(phy->dev, "TCSR clk scheme sel=0x%x -> %s clock\n",
 			 sel, qphy->is_se_clk ? "single-ended" : "differential");
 	}
@@ -612,17 +608,6 @@ static int qusb_phy_init(struct usb_phy *phy)
 		if (!(reg & CORE_READY_STATUS))
 			pll_lock_fail = true;
 	}
-
-	dev_info(phy->dev,
-		 "dbg init: major_rev=%d pll=%02x tune1..5=%02x %02x %02x %02x %02x pwr=%02x utmi_ctrl2=%02x\n",
-		 qphy->major_rev, reg,
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE1),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE2),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE3),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE4),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE5),
-		 readb_relaxed(qphy->base + QUSB2PHY_PWR_CTRL1),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_UTMI_CTRL2));
 
 	if (pll_lock_fail) {
 		dev_err(phy->dev, "QUSB PHY PLL LOCK fails:%x\n", reg);
@@ -940,24 +925,7 @@ static int qusb_phy_regulator_init(struct qusb_phy *qphy)
 	return 0;
 }
 
-/* Bring-up: repeat the PHY state late, the early boot log is overwritten */
-static void qusb_phy_dbg_work(struct work_struct *w)
-{
-	struct qusb_phy *qphy = container_of(to_delayed_work(w),
-					struct qusb_phy, dbg_work);
-
-	dev_info(qphy->phy.dev,
-		 "dbg: TCSR clk scheme sel=0x%x se_clk=%d major_rev=%d tune1=%02x tune2=%02x tune3=%02x tune4=%02x tune5=%02x pll_status=%02x\n",
-		 qphy->dbg_sel, qphy->is_se_clk, qphy->major_rev,
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE1),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE2),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE3),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE4),
-		 readb_relaxed(qphy->base + QUSB2PHY_PORT_TUNE5),
-		 readb_relaxed(qphy->base + QUSB2PHY_PLL_STATUS));
-}
-
-static int __qusb_phy_probe(struct platform_device *pdev)
+static int qusb_phy_probe(struct platform_device *pdev)
 {
 	struct qusb_phy *qphy;
 	struct device *dev = &pdev->dev;
@@ -1241,7 +1209,6 @@ static int __qusb_phy_probe(struct platform_device *pdev)
 
 	mutex_init(&qphy->phy_lock);
 	platform_set_drvdata(pdev, qphy);
-	INIT_DELAYED_WORK(&qphy->dbg_work, qusb_phy_dbg_work);
 
 	qphy->phy.label			= "msm-qusb-phy";
 	qphy->phy.init			= qusb_phy_init;
@@ -1295,35 +1262,6 @@ static const struct of_device_id qusb_phy_id_table[] = {
 	{ },
 };
 MODULE_DEVICE_TABLE(of, qusb_phy_id_table);
-
-/* Bring-up: remember how every probe attempt ended and report it late */
-static int qusb_probe_rc = 12345;
-static int qusb_probe_calls;
-static struct delayed_work qusb_probe_dbg;
-
-static void qusb_probe_dbg_fn(struct work_struct *w)
-{
-	pr_info("qusb-dbg: probe calls=%d last rc=%d (12345 = never probed)\n",
-		qusb_probe_calls, qusb_probe_rc);
-}
-
-static int qusb_phy_probe(struct platform_device *pdev)
-{
-	int ret = __qusb_phy_probe(pdev);
-
-	qusb_probe_calls++;
-	qusb_probe_rc = ret;
-	dev_info(&pdev->dev, "probe returned %d\n", ret);
-	return ret;
-}
-
-static int __init qusb_probe_dbg_init(void)
-{
-	INIT_DELAYED_WORK(&qusb_probe_dbg, qusb_probe_dbg_fn);
-	schedule_delayed_work(&qusb_probe_dbg, 25 * HZ);
-	return 0;
-}
-late_initcall(qusb_probe_dbg_init);
 
 static struct platform_driver qusb_phy_driver = {
 	.probe		= qusb_phy_probe,

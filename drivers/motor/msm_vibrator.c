@@ -31,7 +31,7 @@ static void msm_vib_update(struct work_struct *work)
 {
 	struct msm_vib *vib = container_of(work, struct msm_vib, work);
 
-	gpio_set_value_cansleep(vib->motor_en, vib->state ? 1 : 0);
+	gpio_set_value_cansleep(vib->motor_en, READ_ONCE(vib->state) ? 1 : 0);
 }
 
 static void msm_vib_enable(struct timed_output_dev *dev, int value)
@@ -40,6 +40,10 @@ static void msm_vib_enable(struct timed_output_dev *dev, int value)
 
 	mutex_lock(&vib->lock);
 	hrtimer_cancel(&vib->timer);
+	if (value < 0)
+		value = 0;
+	/* Publish the new state before a short timer can expire. */
+	WRITE_ONCE(vib->state, value != 0);
 
 	if (value) {
 		if (value != 0x7fffffff) {
@@ -49,7 +53,6 @@ static void msm_vib_enable(struct timed_output_dev *dev, int value)
 				      ms_to_ktime(value), HRTIMER_MODE_REL);
 		}
 	}
-	vib->state = value;
 	mutex_unlock(&vib->lock);
 	schedule_work(&vib->work);
 }
@@ -68,7 +71,7 @@ static enum hrtimer_restart msm_vib_timer(struct hrtimer *timer)
 {
 	struct msm_vib *vib = container_of(timer, struct msm_vib, timer);
 
-	vib->state = 0;
+	WRITE_ONCE(vib->state, 0);
 	schedule_work(&vib->work);
 
 	return HRTIMER_NORESTART;
@@ -120,7 +123,10 @@ static int msm_vibrator_remove(struct platform_device *pdev)
 	struct msm_vib *vib = platform_get_drvdata(pdev);
 
 	timed_output_dev_unregister(&vib->timed_dev);
+	hrtimer_cancel(&vib->timer);
 	cancel_work_sync(&vib->work);
+	WRITE_ONCE(vib->state, 0);
+	gpio_set_value_cansleep(vib->motor_en, 0);
 
 	return 0;
 }
@@ -131,6 +137,7 @@ static int msm_vibrator_suspend(struct device *dev)
 
 	hrtimer_cancel(&vib->timer);
 	cancel_work_sync(&vib->work);
+	WRITE_ONCE(vib->state, 0);
 	gpio_set_value_cansleep(vib->motor_en, 0);
 
 	return 0;

@@ -1913,6 +1913,39 @@ static void arm_smmu_free_asid(struct iommu_domain *domain)
 	mutex_unlock(&smmu->idr_mutex);
 }
 
+
+/* a6plte bring-up: remember how every context bank was set up and print it late,
+ * because the early console is overwritten before pstore is read. */
+#define A6_DBG_MAX 24
+static char a6_dbg_buf[A6_DBG_MAX][160];
+static int a6_dbg_n;
+static void a6_dbg_work_fn(struct work_struct *w)
+{
+	int i;
+
+	for (i = 0; i < a6_dbg_n; i++)
+		pr_err("a6plte-smmu: %s\n", a6_dbg_buf[i]);
+}
+static DECLARE_DELAYED_WORK(a6_dbg_work, a6_dbg_work_fn);
+
+static void a6plte_smmu_dbg_record(struct arm_smmu_device *smmu, int ctxfmt,
+				   int iofmt, unsigned long ias,
+				   unsigned long oas)
+{
+	int n = a6_dbg_n;
+
+	if (n >= A6_DBG_MAX)
+		return;
+	snprintf(a6_dbg_buf[n], sizeof(a6_dbg_buf[n]),
+		 "%s ctxfmt=%d iofmt=%d ias=%lu oas=%lu va_size=%lu ipa=%lu opts=0x%lx feat=0x%x",
+		 dev_name(smmu->dev), ctxfmt, iofmt, ias, oas, smmu->va_size,
+		 smmu->ipa_size, (unsigned long)smmu->options,
+		 (unsigned int)smmu->features);
+	a6_dbg_n = n + 1;
+	pr_err("a6plte-smmu: %s\n", a6_dbg_buf[n]);
+	schedule_delayed_work(&a6_dbg_work, 50 * HZ);
+}
+
 static int arm_smmu_init_domain_context(struct iommu_domain *domain,
 					struct arm_smmu_device *smmu,
 					struct device *dev)
@@ -2111,6 +2144,8 @@ static int arm_smmu_init_domain_context(struct iommu_domain *domain,
 		ret = -ENOMEM;
 		goto out_clear_smmu;
 	}
+
+	a6plte_smmu_dbg_record(smmu, cfg->fmt, fmt, ias, oas);
 
 	/*
 	 * assign any page table memory that might have been allocated

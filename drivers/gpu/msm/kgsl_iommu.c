@@ -1161,6 +1161,19 @@ _alloc_pt(struct device *dev, struct kgsl_mmu *mmu, struct kgsl_pagetable *pt)
 	else
 		setup_32bit_pagetable(mmu, pt, iommu_pt);
 
+	{
+		static int a6_n;
+
+		if (a6_n++ < 12)
+			pr_err("a6plte-kgsl: pt name=%d 64bit=%d compat=%d va=%llx-%llx svm=%llx-%llx compat_va=%llx-%llx\n",
+			       pt->name, !!MMU_FEATURE(mmu, KGSL_MMU_64BIT),
+			       kgsl_is_compat_task(),
+			       (u64)iommu_pt->va_start, (u64)iommu_pt->va_end,
+			       (u64)iommu_pt->svm_start, (u64)iommu_pt->svm_end,
+			       (u64)iommu_pt->compat_va_start,
+			       (u64)iommu_pt->compat_va_end);
+	}
+
 
 	return iommu_pt;
 }

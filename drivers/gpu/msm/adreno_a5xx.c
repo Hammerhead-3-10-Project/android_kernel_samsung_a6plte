@@ -1758,6 +1758,27 @@ static void a5xx_enable_64bit(struct adreno_device *adreno_dev)
 	kgsl_regwrite(device, A5XX_SP_ADDR_MODE_CNTL, 0x1);
 	kgsl_regwrite(device, A5XX_TPL1_ADDR_MODE_CNTL, 0x1);
 	kgsl_regwrite(device, A5XX_RBBM_SECVID_TSB_ADDR_MODE_CNTL, 0x1);
+
+	{
+		static int a6_n;
+		unsigned int cp, vsc, gras, rb, pc, hlsq, vfd, vpc, uche, sp, tpl1, tsb;
+
+		kgsl_regread(device, A5XX_CP_ADDR_MODE_CNTL, &cp);
+		kgsl_regread(device, A5XX_VSC_ADDR_MODE_CNTL, &vsc);
+		kgsl_regread(device, A5XX_GRAS_ADDR_MODE_CNTL, &gras);
+		kgsl_regread(device, A5XX_RB_ADDR_MODE_CNTL, &rb);
+		kgsl_regread(device, A5XX_PC_ADDR_MODE_CNTL, &pc);
+		kgsl_regread(device, A5XX_HLSQ_ADDR_MODE_CNTL, &hlsq);
+		kgsl_regread(device, A5XX_VFD_ADDR_MODE_CNTL, &vfd);
+		kgsl_regread(device, A5XX_VPC_ADDR_MODE_CNTL, &vpc);
+		kgsl_regread(device, A5XX_UCHE_ADDR_MODE_CNTL, &uche);
+		kgsl_regread(device, A5XX_SP_ADDR_MODE_CNTL, &sp);
+		kgsl_regread(device, A5XX_TPL1_ADDR_MODE_CNTL, &tpl1);
+		kgsl_regread(device, A5XX_RBBM_SECVID_TSB_ADDR_MODE_CNTL, &tsb);
+		if (a6_n++ < 6)
+			pr_err("a6plte-gpu: addrmode cp=%x vsc=%x gras=%x rb=%x pc=%x hlsq=%x vfd=%x vpc=%x uche=%x sp=%x tpl1=%x tsb=%x\n",
+			       cp, vsc, gras, rb, pc, hlsq, vfd, vpc, uche, sp, tpl1, tsb);
+	}
 }
 
 /*

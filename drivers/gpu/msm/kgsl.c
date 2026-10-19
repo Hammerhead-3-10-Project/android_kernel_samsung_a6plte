@@ -2478,6 +2478,17 @@ long kgsl_ioctl_gpuobj_import(struct kgsl_device_private *dev_priv,
 
 	param->id = entry->id;
 
+	{
+		static atomic_t a6_n = ATOMIC_INIT(0);
+
+		if (!kgsl_is_compat_task() && atomic_inc_return(&a6_n) < 300)
+			pr_err("a6plte-ioctl: import %s pid=%d type=%d id=%u flags=%llx size=%llx gpuaddr=%llx\n",
+			       current->comm, current->pid, param->type,
+			       param->id, (u64)entry->memdesc.flags,
+			       (u64)entry->memdesc.size,
+			       (u64)entry->memdesc.gpuaddr);
+	}
+
 	KGSL_STATS_ADD(entry->memdesc.size, &kgsl_driver.stats.mapped,
 		&kgsl_driver.stats.mapped_max);
 
@@ -3229,6 +3240,16 @@ long kgsl_ioctl_gpuobj_alloc(struct kgsl_device_private *dev_priv,
 	param->flags = entry->memdesc.flags;
 	param->mmapsize = kgsl_memdesc_footprint(&entry->memdesc);
 	param->id = entry->id;
+
+	{
+		static atomic_t a6_n = ATOMIC_INIT(0);
+
+		if (!kgsl_is_compat_task() && atomic_inc_return(&a6_n) < 300)
+			pr_err("a6plte-ioctl: alloc %s pid=%d id=%u flags=%llx size=%llx gpuaddr=%llx\n",
+			       current->comm, current->pid, param->id,
+			       (u64)param->flags, (u64)param->size,
+			       (u64)entry->memdesc.gpuaddr);
+	}
 
 	/* Put the extra ref from kgsl_mem_entry_create() */
 	kgsl_mem_entry_put(entry);
@@ -4079,6 +4100,16 @@ long kgsl_ioctl_gpuobj_info(struct kgsl_device_private *dev_priv,
 	 * there isn't any value in reporting it back to them.
 	 */
 	param->va_addr = 0;
+
+	{
+		static atomic_t a6_n = ATOMIC_INIT(0);
+
+		if (!kgsl_is_compat_task() && atomic_inc_return(&a6_n) < 300)
+			pr_err("a6plte-ioctl: info %s pid=%d id=%u gpuaddr=%llx size=%llx flags=%llx\n",
+			       current->comm, current->pid, param->id,
+			       (u64)param->gpuaddr, (u64)param->size,
+			       (u64)param->flags);
+	}
 
 	kgsl_mem_entry_put(entry);
 	return 0;

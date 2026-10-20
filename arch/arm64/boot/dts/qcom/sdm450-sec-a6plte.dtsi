@@ -658,3 +658,13 @@
 		qcom,ce-opp-freq = <100000000>;
 	};
 };
+
+/* Stock claims only gpio85 here; the msm8953 default also takes gpio86/87 (grip sensor) */
+&gpio_key_active {
+	mux {
+		pins = "gpio85";
+	};
+	config {
+		pins = "gpio85";
+	};
+};
